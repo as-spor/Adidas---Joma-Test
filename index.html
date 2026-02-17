@@ -15,40 +15,52 @@
     <style>
         :root { --primary: #000000; --accent: #00AEEF; --bg: #f8f9fb; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 120px; color: #1a1a1a; }
+        
+        /* Giriş ve Header */
         #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; padding: 20px; }
         .login-box { background: white; width: 100%; max-width: 350px; padding: 40px 30px; border-radius: 24px; text-align: center; color: #333; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .login-input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-family: 'Inter'; font-size: 16px; outline: none; box-sizing: border-box; }
-        .login-btn { width: 100%; background: var(--accent); color: white; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px; }
-        .header-hero { background: var(--primary); color: white; padding: 25px 20px 80px 20px; text-align: left; border-bottom: 6px solid var(--accent); }
+        .login-input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-family: 'Inter'; outline: none; box-sizing: border-box; }
+        .login-btn { width: 100%; background: var(--accent); color: white; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        
+        .header-hero { background: var(--primary); color: white; padding: 25px 20px 80px 20px; border-bottom: 6px solid var(--accent); }
         .header-hero h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+
         .main-container { max-width: 600px; margin: 0 auto; padding: 0 15px; }
         .user-welcome-bar { background: white; padding: 18px; border-radius: 18px; margin-top: -50px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; }
-        .dealer-input { width: 100%; padding: 14px 18px; margin-top: 15px; border: 2px solid #eee; border-radius: 14px; font-family: 'Inter'; font-size: 15px; box-sizing: border-box; font-weight: 500; }
+        
+        .dealer-input { width: 100%; padding: 14px 18px; margin-top: 15px; border: 2px solid #eee; border-radius: 14px; font-family: 'Inter'; font-weight: 500; box-sizing: border-box; }
         .search-container { background: white; padding: 8px; border-radius: 18px; margin-top: 20px; display: flex; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; font-family: 'Inter'; }
-        .btn-scan { background: var(--primary); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
-        .product-card { background: white; border-radius: 24px; padding: 25px; margin-top: 20px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-left: 6px solid var(--accent); }
-        .size-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f2f2f2; }
-        .qty-control { display: flex; gap: 10px; align-items: center; }
-        .btn-qty { width: 36px; height: 36px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: #f0f0f0; }
-        .qty-input { width: 35px; text-align: center; border: none; font-weight: 700; font-size: 16px; }
-        .btn-main-add { width: 100%; background: var(--primary); color: white; padding: 16px; border-radius: 14px; margin-top: 20px; font-weight: 700; border: none; cursor: pointer; font-size: 16px; height: 55px; }
-        .bottom-bar { position: fixed; bottom: 20px; left: 15px; right: 15px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 18px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; z-index: 900; border: 1px solid rgba(0,0,0,0.05); }
-        .btn-checkout { background: var(--accent); color: white; border: none; padding: 12px 28px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .btn-scan { background: var(--primary); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; }
+
+        /* Ürün Kartı */
+        .product-card { background: white; border-radius: 24px; padding: 25px; margin-top: 20px; display: none; border-left: 6px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .size-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f2f2f2; }
+        .qty-control { display: flex; gap: 8px; align-items: center; }
+        .btn-qty { width: 34px; height: 34px; border-radius: 8px; border: none; background: #f0f0f0; cursor: pointer; font-weight: bold; }
+        .qty-input { width: 45px; text-align: center; border: 1px solid #ddd; border-radius: 8px; height: 30px; font-weight: 700; font-family: 'Inter'; }
+        .btn-main-add { width: 100%; background: var(--primary); color: white; padding: 16px; border-radius: 14px; margin-top: 20px; font-weight: 700; border: none; cursor: pointer; height: 55px; }
+
+        /* Yüzer Sepet Butonu */
+        .floating-cart { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: white; width: 65px; height: 65px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 25px rgba(0,174,239,0.4); z-index: 1000; cursor: pointer; }
+        .cart-badge { position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; display: flex; justify-content: center; align-items: center; border: 2px solid white; font-weight: 800; }
+
+        /* Modal / Sepet */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 6000; }
-        .modal-content { background: white; margin: 8% auto; width: 90%; max-width: 480px; padding: 30px; border-radius: 24px; max-height: 80vh; overflow-y: auto; }
-        #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 7000; left: 50%; bottom: 100px; transform: translateX(-50%); font-weight: 600; }
+        .modal-content { background: white; margin: 10% auto; width: 90%; max-width: 480px; padding: 30px; border-radius: 24px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .cart-item { padding: 12px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        
+        #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 7000; left: 50%; bottom: 120px; transform: translateX(-50%); font-weight: 600; }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 100px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 100px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 120px; opacity: 1;} }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
     <div class="login-box">
-        <h2 style="margin: 0; color: #000; font-weight: 800; font-size: 24px;">AS SPOR</h2>
-        <p style="color:#888; font-size:14px; margin-bottom: 25px;">Showroom Girişi</p>
+        <h2 style="color: #000; font-weight: 800;">AS SPOR</h2>
+        <p style="color:#888; font-size:14px;">Showroom Girişi</p>
         <select id="loginUser" class="login-input">
             <option value="" disabled selected>Yönetici Seçiniz</option>
             <option value="adnan_kaya">Adnan Kaya</option>
@@ -59,9 +71,9 @@
             <option value="ozkan_ocak">Özkan Ocak</option>
             <option value="serkan_mert">Serkan Mert</option>
         </select>
-        <input type="password" id="loginPass" class="login-input" placeholder="Giriş Şifresi">
-        <button onclick="checkLogin()" class="login-btn">SİSTEME GİRİŞ</button>
-        <p id="loginError" style="color: #ff4d4d; font-size: 13px; display: none; margin-top: 15px; font-weight: 600;">Hatalı Şifre!</p>
+        <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
+        <button onclick="checkLogin()" class="login-btn">GİRİŞ YAP</button>
+        <p id="loginError" style="color:red; display:none; font-size:12px; margin-top:10px;">Hatalı Şifre!</p>
     </div>
 </div>
 
@@ -69,39 +81,43 @@
 <div class="main-container">
     <div class="user-welcome-bar">
         <span><b>Sorumlu:</b> <span id="displayUserName">-</span></span>
-        <button onclick="logout()" style="color:#ff4d4d; border:none; background:none; cursor:pointer; font-weight:700; font-size:14px;">OTURUMU KAPAT</button>
+        <button onclick="logout()" style="color:red; border:none; background:none; font-weight:700; cursor:pointer;">ÇIKIŞ</button>
     </div>
+    
     <input type="text" id="dealerName" class="dealer-input" placeholder="Bayi Adı Giriniz (Zorunlu)">
+    
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-field" placeholder="Ürün Barkodu veya Artikel...">
+        <input type="text" id="searchInput" class="search-field" placeholder="Barkod veya Artikel...">
         <button class="btn-scan" onclick="searchProduct()"><i class="fas fa-search"></i></button>
     </div>
+
     <div id="productCard" class="product-card">
-        <h3 id="pName" style="margin:0; font-weight: 800; font-size: 20px;"></h3>
-        <small id="pCode" style="color:#00AEEF; font-weight: 700;"></small>
+        <h3 id="pName" style="margin:0; font-weight: 800;"></h3>
+        <small id="pCode" style="color:var(--accent); font-weight: 700;"></small>
         <div id="sizeList" style="margin-top:20px;"></div>
         <button onclick="addToCart()" class="btn-main-add">SEPETE EKLE</button>
     </div>
 </div>
 
-<div class="bottom-bar">
-    <div><b>Sepet:</b> <span id="totalItems" style="color:var(--accent); font-weight:800; font-size: 18px;">0</span></div>
-    <button class="btn-checkout" onclick="openCart()">SİPARİŞİ BİTİR</button>
+<div class="floating-cart" onclick="openCart()">
+    <i class="fas fa-shopping-cart fa-lg"></i>
+    <div id="cartBadge" class="cart-badge">0</div>
 </div>
 
 <div id="cartModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeCart()" style="float:right; cursor:pointer; font-size:28px; font-weight: 800;">&times;</span>
-        <h2 style="margin-top:0; font-weight: 800; letter-spacing: -1px;">Sipariş Özeti</h2>
-        <div id="cartItems" style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;"></div>
-        <label style="font-size:12px; font-weight:800; color: #888;">EKSTRA MAİL ALICISI (OPSİYONEL):</label>
-        <input type="text" id="customerEmail" class="dealer-input" style="margin-top:8px; margin-bottom: 20px;" placeholder="musteri@mail.com">
-        <div style="display:flex; gap:12px;">
-            <button onclick="exportToExcel()" style="flex:1; background:#2ecc71; color:white; border:none; padding:16px; border-radius:14px; font-weight:800; cursor:pointer;">EXCEL AL</button>
-            <button onclick="sendMail()" id="btnMail" style="flex:1; background:#000; color:white; border:none; padding:16px; border-radius:14px; font-weight:800; cursor:pointer;">MAİL AT</button>
+        <span onclick="closeCart()" style="float:right; cursor:pointer; font-size:24px; font-weight:800;">&times;</span>
+        <h2 style="margin-top:0;">Sipariş Özeti</h2>
+        <div id="cartItems"></div>
+        <hr>
+        <input type="text" id="customerEmail" class="dealer-input" placeholder="Ekstra Mail (Opsiyonel)">
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button onclick="exportToExcel()" style="flex:1; background:#2ecc71; color:white; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">EXCEL</button>
+            <button onclick="sendMail()" id="btnMail" style="flex:1; background:black; color:white; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">MAİL AT</button>
         </div>
     </div>
 </div>
+
 <div id="toast"></div>
 
 <script>
@@ -111,12 +127,9 @@
     const FIXED_EMAILS = "emel@asspor.com, siparis@asspor.com";
 
     const USERS = {
-        "adnan_kaya": { name: "Adnan Kaya", pass: "1234" },
-        "cinar_gokce": { name: "Çınar Gökçe", pass: "1234" },
-        "lutfu_ozturk": { name: "Lütfü Öztürk", pass: "1234" },
-        "meftuni_cay": { name: "Meftuni Çay", pass: "1234" },
-        "murat_turgut": { name: "Murat Turgut", pass: "1234" },
-        "ozkan_ocak": { name: "Özkan Ocak", pass: "1234" },
+        "adnan_kaya": { name: "Adnan Kaya", pass: "1234" }, "cinar_gokce": { name: "Çınar Gökçe", pass: "1234" },
+        "lutfu_ozturk": { name: "Lütfü Öztürk", pass: "1234" }, "meftuni_cay": { name: "Meftuni Çay", pass: "1234" },
+        "murat_turgut": { name: "Murat Turgut", pass: "1234" }, "ozkan_ocak": { name: "Özkan Ocak", pass: "1234" },
         "serkan_mert": { name: "Serkan Mert", pass: "1234" }
     };
 
@@ -127,17 +140,9 @@
     window.onload = () => {
         const saved = localStorage.getItem('activeUser');
         if(saved) loginSuccess(saved);
-        
-        // CSV OKUMA: Delimiter boş bırakılarak otomatik (virgül/noktalı virgül) algılama sağlandı
         Papa.parse('data.csv', { 
-            download: true, 
-            header: true, 
-            skipEmptyLines: true,
-            delimiter: "", 
-            complete: function(r){ 
-                inventory = r.data; 
-                console.log("Veri yüklendi. Satır:", inventory.length);
-            }
+            download: true, header: true, skipEmptyLines: true, delimiter: "", 
+            complete: function(r){ inventory = r.data; console.log("Veri Yüklendi:", inventory.length); }
         });
     };
 
@@ -153,94 +158,97 @@
     function searchProduct() {
         const q = document.getElementById('searchInput').value.toUpperCase().trim();
         if(!q) return;
-
-        // Ürün kodu sütununu esnek arama (Noktalı virgül kaynaklı kaymaları önlemek için)
         currentProductGroup = inventory.filter(i => {
             const code = i['Ürün Kodu'] || i['ÜrünKodu'] || i['Kod'] || Object.values(i)[0];
             return code && code.toString().toUpperCase().includes(q);
         });
-
         if(currentProductGroup.length > 0) renderProduct(currentProductGroup);
-        else showToast("Ürün sistemde bulunamadı!");
+        else showToast("Ürün bulunamadı!");
         document.getElementById('searchInput').value = "";
     }
 
     function renderProduct(g) {
-        // Dinamik başlık bulma (Excel formatı kaymışsa bile yakalar)
-        const firstItem = g[0];
-        const name = firstItem['Ürün Adı'] || firstItem['ÜrünAdı'] || firstItem['Adı'] || "Bilinmeyen Ürün";
-        const code = firstItem['Ürün Kodu'] || firstItem['Kod'] || Object.values(firstItem)[0];
-        
-        document.getElementById('pName').innerText = name;
-        document.getElementById('pCode').innerText = code;
+        const first = g[0];
+        document.getElementById('pName').innerText = first['Ürün Adı'] || first['ÜrünAdı'] || "Ürün";
+        document.getElementById('pCode').innerText = first['Ürün Kodu'] || Object.values(first)[0];
         const list = document.getElementById('sizeList'); list.innerHTML = "";
         
         g.forEach((item, i) => {
-            const stockVal = item['Miktar'] || item['Adet'] || item['Stok'] || 0;
-            const sizeVal = item['Beden'] || item['Size'] || "-";
-            const stock = parseInt(stockVal);
-            list.innerHTML += `<div class="size-row">
-                <div><b>${sizeVal}</b><br><small style="color:#888;">Mevcut: ${stock}</small></div>
-                <div class="qty-control">
-                    <button class="btn-qty" onclick="changeQty(${i},-1)">-</button>
-                    <input type="number" id="qty-${i}" class="qty-input" value="0" readonly>
-                    <button class="btn-qty" style="background:var(--accent); color:#fff;" onclick="changeQty(${i},1,${stock})">+</button>
-                </div>
-            </div>`;
+            const stock = parseInt(item['Miktar'] || item['Adet'] || item['Stok'] || 0);
+            const size = item['Beden'] || item['Size'] || "-";
+            list.innerHTML += `
+                <div class="size-row">
+                    <div><b>${size}</b><br><small style="color:#888;">Stok: ${stock}</small></div>
+                    <div class="qty-control">
+                        <button class="btn-qty" onclick="changeQty(${i},-1)">-</button>
+                        <input type="number" id="qty-${i}" class="qty-input" value="0" min="0" max="${stock}" oninput="validateInput(this, ${stock})">
+                        <button class="btn-qty" style="background:var(--accent); color:white;" onclick="changeQty(${i},1,${stock})">+</button>
+                    </div>
+                </div>`;
         });
         document.getElementById('productCard').style.display = 'block';
     }
 
-    window.changeQty = function(i, d, m) {
+    function changeQty(i, d, max) {
         const el = document.getElementById(`qty-${i}`);
         let v = parseInt(el.value) + d;
-        if(v >= 0 && v <= m) el.value = v;
-        else if(v > m) showToast("Stok limitine ulaşıldı!");
+        if(v >= 0 && v <= max) el.value = v;
+        else if(v > max) showToast("Stok yetersiz!");
     }
 
-    window.addToCart = function() {
+    function validateInput(el, max) {
+        if(parseInt(el.value) > max) { showToast("Stok sınırını aştınız!"); el.value = max; }
+        if(parseInt(el.value) < 0 || el.value === "") el.value = 0;
+    }
+
+    function addToCart() {
         const d = document.getElementById('dealerName').value.trim();
-        if(!d) { showToast("Lütfen önce bayi adını yazın!"); return; }
-        let addedCount = 0;
+        if(!d) { showToast("Bayi adı zorunlu!"); return; }
+        let added = 0;
         currentProductGroup.forEach((item, i) => {
             const q = parseInt(document.getElementById(`qty-${i}`).value);
             if(q > 0) {
-                const code = item['Ürün Kodu'] || Object.values(item)[0];
-                const name = item['Ürün Adı'] || "Ürün";
-                const size = item['Beden'] || "-";
-                cart.push({ code: code, name: name, size: size, qty: q, manager: currentUser.name, dealer: d });
-                document.getElementById(`qty-${i}`).value = 0;
-                addedCount += q;
+                cart.push({ 
+                    code: item['Ürün Kodu'] || Object.values(item)[0], 
+                    name: item['Ürün Adı'] || "Ürün", size: item['Beden'] || "-", qty: q, dealer: d 
+                });
+                added += q;
             }
         });
-        if(addedCount > 0) { updateUI(); showToast("Sepete eklendi."); document.getElementById('productCard').style.display = 'none'; }
+        if(added > 0) { updateUI(); showToast("Sepete eklendi!"); document.getElementById('productCard').style.display = 'none'; }
     }
 
-    function updateUI() { document.getElementById('totalItems').innerText = cart.reduce((a,b)=>a+b.qty,0); }
+    function updateUI() { document.getElementById('cartBadge').innerText = cart.length; }
 
-    window.openCart = function() {
+    function openCart() {
         if(cart.length === 0) { showToast("Sepetiniz boş!"); return; }
         const list = document.getElementById('cartItems'); list.innerHTML = "";
-        cart.forEach(i => { list.innerHTML += `<div style="padding:8px 0; border-bottom:1px solid #f9f9f9; font-size:14px;">${i.code} - ${i.size} <span style="float:right;"><b>${i.qty} Adet</b></span></div>`; });
+        cart.forEach((i, index) => {
+            list.innerHTML += `
+                <div class="cart-item">
+                    <span>${i.code} - ${i.size} (${i.qty} Adet)</span>
+                    <button onclick="removeFromCart(${index})" style="background:none; border:none; color:red; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </div>`;
+        });
         document.getElementById('cartModal').style.display = 'block';
     }
-    window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; }
+    function removeFromCart(i) { cart.splice(i, 1); updateUI(); openCart(); if(cart.length===0) closeCart(); }
+    function closeCart() { document.getElementById('cartModal').style.display = 'none'; }
 
-    window.sendMail = function() {
-        const btn = document.getElementById('btnMail');
-        btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
+    function sendMail() {
+        const btn = document.getElementById('btnMail'); btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
         let details = ""; cart.forEach(i => { details += `${i.code} - ${i.name} [${i.size}] : ${i.qty} Adet\n`; });
         const params = {
             manager: currentUser.name, dealer: document.getElementById('dealerName').value,
             customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : ""),
-            order_details: details, total_qty: cart.reduce((a,b)=>a+b.qty,0)
+            order_details: details, total_qty: cart.length
         };
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).then(() => {
             showToast("Sipariş iletildi!"); btn.disabled = false; btn.innerText = "MAİL AT"; cart = []; updateUI(); closeCart();
-        }, (err) => { alert("Hata: " + JSON.stringify(err)); btn.disabled = false; btn.innerText = "MAİL AT"; });
+        }, (err) => { alert("Hata!"); btn.disabled = false; });
     }
 
-    window.exportToExcel = function() {
+    function exportToExcel() {
         const ws = XLSX.utils.json_to_sheet(cart); const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Siparis");
         XLSX.writeFile(wb, `AsSpor_Siparis_${document.getElementById('dealerName').value}.xlsx`);
