@@ -32,8 +32,9 @@
         .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; font-family: 'Inter'; }
         .btn-scan { background: var(--primary); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
 
-        .product-card { background: white; border-radius: 24px; margin-top: 20px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eee; }
-        .product-img { width: 100%; height: 300px; object-fit: contain; background: #fff; padding: 10px; }
+        /* Ürün Kartı (Dinamik Yapı) */
+        .product-card { background: white; border-radius: 24px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eee; animation: fadein 0.5s; }
+        .product-img { width: 100%; height: 300px; object-fit: contain; background: #fff; padding: 10px; border-bottom: 1px solid #f0f0f0; }
         .product-info { padding: 25px; }
         .price-tag { font-size: 24px; font-weight: 800; color: var(--accent); margin: 10px 0; display: block; }
         
@@ -57,13 +58,12 @@
 </head>
 <body>
 
-<div id="debugStatus">Sistem Başlatılıyor...</div>
+<div id="debugStatus">Veriler Yükleniyor...</div>
 
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin: 0; font-weight: 800;">AS SPOR</h2>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">Showroom Personel Girişi</p>
-        
         <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı (örn: lutfuozturk)" autocomplete="off">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
         <button id="btnLogin" class="login-btn">GİRİŞ YAP</button>
@@ -81,25 +81,12 @@
     <input type="text" id="dealerName" class="login-input" style="margin-top:15px; background:white;" placeholder="Bayi Adı (Zorunlu)">
     
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-field" placeholder="Ürün Ara (Kod, İsim vb.)">
+        <input type="text" id="searchInput" class="search-field" placeholder="Ürün Kodu Ara (Örn: BKLITW25)">
         <button class="btn-scan" onclick="searchProduct()"><i class="fas fa-search"></i></button>
     </div>
 
-    <div id="productCard" class="product-card">
-        <img id="pImg" class="product-img" src="" alt="">
-        <div class="product-info">
-            <h3 id="pName" style="margin:0; font-weight: 800;"></h3>
-            <p id="pCode" style="color:#666; font-weight: 600; margin:5px 0;"></p>
-            <span id="pPrice" class="price-tag"></span>
-            <span onclick="toggleDetails()" style="color:var(--accent); cursor:pointer; text-decoration:underline; font-size:13px; font-weight:700;">Ürün Detayları</span>
-            <div id="descBox" style="display:none; background:#f9f9f9; padding:15px; margin-top:10px; border-radius:12px; font-size:13px;">
-                <b>EAN:</b> <span id="pEAN"></span><br><br>
-                <span id="pLongDesc"></span>
-            </div>
-            <div id="sizeList" style="margin-top:15px;"></div>
-            <button onclick="addToCart()" style="width:100%; background:black; color:white; border:none; padding:18px; border-radius:14px; margin-top:20px; font-weight:800; cursor:pointer;">SEPETE EKLE</button>
-        </div>
-    </div>
+    <div id="resultsArea"></div>
+
 </div>
 
 <div class="floating-cart" onclick="openCart()">
@@ -130,7 +117,6 @@
     const EMAILJS_PUBLIC_KEY = "VSRTcl2JLxhmNWT4a";
     const FIXED_EMAILS = "emel@asspor.com, siparis@asspor.com";
 
-    // KULLANICI LİSTESİ (Kullanıcı Adı: lutfuozturk formatında)
     const USERS = {
         "adnankaya": { name: "Adnan Kaya", pass: "1234" },
         "cinargokce": { name: "Çınar Gökçe", pass: "1234" },
@@ -142,10 +128,11 @@
         "admin": { name: "Test Admin", pass: "1234" }
     };
 
-    let currentUser = null, inventory = [], currentGroup = [], cart = [];
+    let currentUser = null, inventory = [], cart = [];
+    let groupedResults = {}; // Arama sonuçlarını kod bazlı gruplamak için
     let isDataLoaded = false;
 
-    // --- GİRİŞ FONKSİYONLARI (GLOBAL TANIMLI) ---
+    // --- GİRİŞ FONKSİYONLARI ---
     window.checkLogin = function() {
         let rawUser = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, ''); 
         const p = document.getElementById('loginPass').value;
@@ -171,11 +158,9 @@
     window.onload = function() {
         (function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
 
-        // Önceki oturumu kontrol et
         const saved = localStorage.getItem('activeUser');
         if(saved && USERS[saved]) loginSuccess(saved);
 
-        // Giriş butonu olayları
         document.getElementById("btnLogin").onclick = checkLogin;
         document.getElementById("loginPass").addEventListener("keypress", function(e) {
             if (e.key === "Enter") checkLogin();
@@ -184,21 +169,18 @@
             if (e.key === "Enter") { e.preventDefault(); searchProduct(); }
         });
 
-        // VERİ YÜKLEME (Arka planda çalışır, girişi engellemez)
+        // VERİ YÜKLEME (Arka planda)
         const debugEl = document.getElementById('debugStatus');
         debugEl.innerText = "Veriler İndiriliyor...";
 
         Papa.parse('data.csv', { 
-            download: true, 
-            header: true, 
-            delimiter: ";", 
-            skipEmptyLines: 'greedy', 
-            worker: false, // Tarayıcı uyumu için kapalı, gerekirse açılabilir
+            download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy', 
+            worker: false,
             complete: function(r) {
-                // Boş satır temizliği
+                // Sadece dolu ve ürün kodu olan satırları al
                 inventory = r.data.filter(row => {
                     const str = Object.values(row).join('').trim();
-                    return str.length > 3 && row['Product']; // Sadece Product'ı olanları al
+                    return str.length > 3 && (row['Product'] || row['Reference']);
                 });
                 isDataLoaded = true;
                 debugEl.style.backgroundColor = "#27ae60";
@@ -215,82 +197,161 @@
     function logout() { localStorage.removeItem('activeUser'); location.reload(); }
 
     function searchProduct() {
-        if(!isDataLoaded) { showToast("Veriler henüz yüklenmedi, bekleyin!"); return; }
+        if(!isDataLoaded) { showToast("Veriler yükleniyor, lütfen bekleyin..."); return; }
 
         const q = document.getElementById('searchInput').value.toUpperCase().trim();
         if(!q) return;
         
-        // Akıllı arama: Tüm sütunlarda ara
-        currentGroup = inventory.filter(i => Object.values(i).join(' ').toUpperCase().includes(q));
-        
-        if(currentGroup.length > 0) renderProduct(currentGroup);
-        else showToast("Ürün bulunamadı!");
+        // 1. ADIM: Eşleşen tüm satırları bul (BKLITW25 yazınca BKLITW2525 ve BKLITW2501'i bulur)
+        const allMatches = inventory.filter(i => {
+            const code = i.Product || i.Reference || "";
+            return code.toString().toUpperCase().includes(q) || 
+                   (i.Description && i.Description.toUpperCase().includes(q));
+        });
+
+        if(allMatches.length === 0) {
+            showToast("Ürün bulunamadı!");
+            document.getElementById('resultsArea').innerHTML = "";
+            return;
+        }
+
+        // 2. ADIM: Sonuçları MODEL KODUNA göre grupla
+        // Böylece her renk (BKLITW2525, BKLITW2501) ayrı bir grup olur
+        groupedResults = {};
+        allMatches.forEach(item => {
+            const uniqueCode = item.Product || item.Reference || "UNK";
+            if(!groupedResults[uniqueCode]) {
+                groupedResults[uniqueCode] = [];
+            }
+            groupedResults[uniqueCode].push(item);
+        });
+
+        // 3. ADIM: Sonuçları Ekrana Bas
+        renderResults();
         document.getElementById('searchInput').value = "";
     }
 
-    function renderProduct(g) {
-        const first = g[0];
-        document.getElementById('pImg').src = first.ImageURL || "https://via.placeholder.com/400";
-        document.getElementById('pName').innerText = first.Description || "İsimsiz";
-        document.getElementById('pCode').innerText = first.Reference || first.Product;
-        document.getElementById('pEAN').innerText = first.EAN || "-";
-        document.getElementById('pLongDesc').innerText = first['Long Description'] || "Detay yok.";
-        
-        let price = first['Tariff Price'] || first['Base Price'] || "0";
-        let currency = first['Currency'] || "TL";
-        document.getElementById('pPrice').innerText = `${price} ${currency}`;
+    function renderResults() {
+        const area = document.getElementById('resultsArea');
+        area.innerHTML = ""; // Önce temizle
 
-        const list = document.getElementById('sizeList'); list.innerHTML = "";
-        g.forEach((item, i) => {
-            const stock = parseInt(item['Stock Quantity'] || 0);
-            list.innerHTML += `
-                <div class="size-row">
-                    <div><b>${item['EUR Size']}</b><br><small>Stok: ${stock}</small></div>
-                    <div class="qty-control">
-                        <button class="btn-qty" onclick="changeQty(${i},-1)">-</button>
-                        <input type="number" id="qty-${i}" class="qty-input" value="0" min="0" max="${stock}" 
-                               onfocus="if(this.value=='0') this.value=''" 
-                               onblur="if(this.value=='') this.value='0'"
-                               oninput="if(this.value>${stock})this.value=${stock}">
-                        <button class="btn-qty" style="background:var(--accent); color:white;" onclick="changeQty(${i},1,${stock})">+</button>
+        // Her bir ürün kodu grubu için ayrı kart oluştur
+        Object.keys(groupedResults).forEach(code => {
+            const group = groupedResults[code];
+            const first = group[0]; // Karttaki genel bilgiler için ilk satırı kullan
+            
+            // Fiyat Formatı
+            let rawPrice = first['Tariff Price'] || first['Base Price'] || "0";
+            let currency = first['Currency'] || "TL";
+            let displayPrice = `${rawPrice} ${currency}`;
+
+            // Kart HTML'i
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'product-card';
+            
+            let html = `
+                <img src="${first.ImageURL || 'https://via.placeholder.com/400'}" class="product-img">
+                <div class="product-info">
+                    <h3 style="margin:0; font-weight: 800;">${first.Description || "Ürün Adı Yok"}</h3>
+                    <p style="color:#666; font-weight: 600; margin:5px 0;">${code}</p>
+                    <span class="price-tag">${displayPrice}</span>
+                    
+                    <span onclick="toggleDetails('${code}')" style="color:var(--accent); cursor:pointer; text-decoration:underline; font-size:13px; font-weight:700;">Detaylar & EAN</span>
+                    <div id="desc-${code}" style="display:none; background:#f9f9f9; padding:15px; margin-top:10px; border-radius:12px; font-size:13px;">
+                        <b>EAN:</b> ${first.EAN || "-"}<br><br>
+                        ${first['Long Description'] || "Açıklama yok."}
                     </div>
+
+                    <div style="margin-top:15px;">`;
+
+            // Beden Listesi
+            group.forEach((item, index) => {
+                const stock = parseInt(item['Stock Quantity'] || 0);
+                const size = item['EUR Size'] || item['Beden'] || "-";
+                // Benzersiz ID: qty-URUNKODU-INDEX (Örn: qty-BKLITW2525-0)
+                const inputId = `qty-${code}-${index}`;
+                
+                html += `
+                    <div class="size-row">
+                        <div><b>${size}</b><br><small>Stok: ${stock}</small></div>
+                        <div class="qty-control">
+                            <button class="btn-qty" onclick="changeQty('${inputId}',-1)">-</button>
+                            <input type="number" id="${inputId}" class="qty-input" value="0" min="0" max="${stock}" 
+                                   onfocus="if(this.value=='0') this.value=''" 
+                                   onblur="if(this.value=='') this.value='0'"
+                                   oninput="if(this.value>${stock})this.value=${stock}">
+                            <button class="btn-qty" style="background:var(--accent); color:white;" onclick="changeQty('${inputId}',1,${stock})">+</button>
+                        </div>
+                    </div>`;
+            });
+
+            html += `</div>
+                    <button onclick="addToCart('${code}')" style="width:100%; background:black; color:white; border:none; padding:18px; border-radius:14px; margin-top:20px; font-weight:800; cursor:pointer;">SEPETE EKLE</button>
                 </div>`;
+            
+            cardDiv.innerHTML = html;
+            area.appendChild(cardDiv);
         });
-        document.getElementById('productCard').style.display = 'block';
     }
 
-    function toggleDetails() {
-        const box = document.getElementById('descBox');
-        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    // Yardımcı Fonksiyonlar (Global Erişim İçin Window'a Bağladık)
+    window.toggleDetails = function(code) {
+        const el = document.getElementById(`desc-${code}`);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
-    function changeQty(i, d, max) {
-        const el = document.getElementById(`qty-${i}`);
+
+    window.changeQty = function(id, d, max) {
+        const el = document.getElementById(id);
+        if(!el) return;
         let v = (el.value === "" ? 0 : parseInt(el.value)) + d;
-        if(v >= 0 && v <= max) el.value = v;
+        if(max !== undefined) {
+            if(v >= 0 && v <= max) el.value = v;
+        } else {
+            if(v >= 0) el.value = v;
+        }
     }
 
-    function addToCart() {
+    window.addToCart = function(code) {
         const d = document.getElementById('dealerName').value.trim();
-        if(!d) { showToast("Bayi adı zorunlu!"); return; }
-        
-        const first = currentGroup[0];
+        if(!d) { showToast("Lütfen bayi adı girin!"); return; }
+
+        const group = groupedResults[code]; // İlgili ürün grubunu al
+        if(!group) return;
+
+        let addedCount = 0;
+        const first = group[0];
         let rawPrice = first['Tariff Price'] || first['Base Price'] || "0";
         let priceVal = parseFloat(String(rawPrice).replace(',', '.'));
         let currency = first['Currency'] || "TL";
 
-        let added = 0;
-        currentGroup.forEach((item, i) => {
-            const el = document.getElementById(`qty-${i}`);
+        group.forEach((item, index) => {
+            const inputId = `qty-${code}-${index}`;
+            const el = document.getElementById(inputId);
             const q = el.value === "" ? 0 : parseInt(el.value);
+            
             if(q > 0) {
-                cart.push({ 
-                    img: item.ImageURL, code: item.Reference || item.Product, name: item.Description, 
-                    size: item['EUR Size'], qty: q, price: priceVal, currency: currency, dealer: d 
+                cart.push({
+                    img: item.ImageURL,
+                    code: item.Product || item.Reference,
+                    name: item.Description,
+                    size: item['EUR Size'] || item['Beden'],
+                    qty: q,
+                    price: priceVal,
+                    currency: currency,
+                    dealer: d
                 });
-                added += q;
+                addedCount += q;
+                // Ekledikten sonra inputu sıfırla
+                el.value = 0;
             }
         });
-        if(added > 0) { updateUI(); showToast("Sepete eklendi."); document.getElementById('productCard').style.display = 'none'; }
+
+        if(addedCount > 0) {
+            updateUI();
+            showToast(`${addedCount} adet ürün sepete eklendi.`);
+        } else {
+            showToast("Lütfen en az bir adet seçin.");
+        }
     }
 
     function updateUI() { 
@@ -299,7 +360,7 @@
         document.getElementById('cartTotal').innerText = total.toFixed(2) + " " + (cart[0]?.currency || "");
     }
 
-    function openCart() {
+    window.openCart = function() {
         if(cart.length === 0) { showToast("Sepet boş!"); return; }
         const list = document.getElementById('cartItems'); list.innerHTML = "";
         cart.forEach((item, index) => {
@@ -318,10 +379,10 @@
         document.getElementById('cartModal').style.display = 'block';
     }
 
-    function removeFromCart(i) { cart.splice(i, 1); openCart(); if(cart.length===0) closeCart(); }
-    function closeCart() { document.getElementById('cartModal').style.display = 'none'; }
+    window.removeFromCart = function(i) { cart.splice(i, 1); openCart(); if(cart.length===0) closeCart(); }
+    window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; }
 
-    function sendMail() {
+    window.sendMail = function() {
         const btn = document.getElementById('btnMail'); btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
         let tableHTML = `
         <table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:12px;">
@@ -340,12 +401,13 @@
         }, (err) => { alert("Hata!"); btn.disabled = false; });
     }
 
-    function exportToExcel() {
+    window.exportToExcel = function() {
         const ws = XLSX.utils.json_to_sheet(cart); const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Siparis");
         XLSX.writeFile(wb, `AsSpor_${document.getElementById('dealerName').value}.xlsx`);
     }
-    function showToast(m) { const t=document.getElementById("toast"); t.innerText=m; t.className="show"; setTimeout(()=>t.className="", 3000); }
+    
+    window.showToast = function(m) { const t=document.getElementById("toast"); t.innerText=m; t.className="show"; setTimeout(()=>t.className="", 3000); }
 </script>
 </body>
 </html>
