@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -36,18 +37,18 @@
         .search-container { background: white; padding: 8px; border-radius: 18px; margin-top: 20px; display: flex; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; font-family: 'Inter'; }
         
-        /* BUTONLAR */
         .btn-scan { background: var(--primary); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
         .btn-camera { background: var(--accent); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 20px; }
         
-        /* KAMERA ALANI */
-        #reader { width: 100%; margin-top: 15px; border-radius: 18px; overflow: hidden; display: none; border: 4px solid var(--accent); }
+        /* KAMERA VE OCR ALANI */
+        #reader-container { width: 100%; margin-top: 15px; display: none; }
+        #reader { border-radius: 18px; overflow: hidden; border: 4px solid var(--accent); background: #000; }
+        .ocr-controls { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-ocr-trigger { flex: 1; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; cursor: pointer; }
 
-        /* GRID YAPISI */
         #resultsArea { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 25px; }
         @media (max-width: 768px) { #resultsArea { grid-template-columns: 1fr; } }
 
-        /* Ürün Kartı */
         .product-card { background: white; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eee; animation: fadein 0.5s; transition: transform 0.2s; display: flex; flex-direction: column; height: 100%; }
         .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .product-img { width: 100%; height: 250px; object-fit: contain; background: #fff; padding: 10px; border-bottom: 1px solid #f0f0f0; }
@@ -55,8 +56,7 @@
         .price-tag { font-size: 22px; font-weight: 800; color: var(--accent); margin: 5px 0; display: block; }
         .info-box { background: #f9f9f9; padding: 10px; border-radius: 8px; font-size: 12px; color: #555; margin: 10px 0; display: none; }
         .stock-section { display: none; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 10px; }
-        .toggle-btn { text-align: center; color: white; font-weight: 700; font-size: 13px; padding: 12px; background: var(--accent); cursor: pointer; border-radius: 10px; margin-top: 10px; transition: 0.2s; }
-        .toggle-btn:hover { opacity: 0.9; }
+        .toggle-btn { text-align: center; color: white; font-weight: 700; font-size: 13px; padding: 12px; background: var(--accent); cursor: pointer; border-radius: 10px; margin-top: 10px; }
         .size-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f2f2f2; }
         .qty-control { display: flex; gap: 5px; align-items: center; }
         .btn-qty { width: 32px; height: 32px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; background: #f0f0f0; }
@@ -68,11 +68,6 @@
         .cart-badge { position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; display: flex; justify-content: center; align-items: center; border: 2px solid white; font-weight: 800; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 6000; }
         .modal-content { background: white; margin: 5% auto; width: 95%; max-width: 550px; padding: 25px; border-radius: 24px; max-height: 85vh; overflow-y: auto; position: relative; }
-        .history-item { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
-        .history-info { font-size: 13px; color: #333; }
-        .history-btn { background: #2ecc71; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 12px; }
-        .cart-item { display: flex; align-items: center; gap: 15px; padding: 12px 0; border-bottom: 1px solid #eee; }
-        .cart-thumb { width: 60px; height: 60px; object-fit: contain; border-radius: 8px; background: #f9f9f9; }
         
         #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 7000; left: 50%; bottom: 120px; transform: translateX(-50%); font-weight: 600; }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
@@ -87,7 +82,7 @@
     <div class="login-box">
         <h2 style="margin: 0; font-weight: 800;">AS SPOR</h2>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">Showroom Personel Girişi</p>
-        <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı (örn: lutfuozturk)" autocomplete="off">
+        <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı" autocomplete="off">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
         <button id="btnLogin" class="login-btn">GİRİŞ YAP</button>
         <div id="loginError" class="error-msg"></div>
@@ -112,10 +107,15 @@
         <button class="btn-camera" onclick="toggleCamera()" style="margin-left:5px;"><i class="fas fa-camera"></i></button>
     </div>
 
-    <div id="reader"></div>
+    <div id="reader-container">
+        <div id="reader"></div>
+        <div class="ocr-controls">
+            <button class="btn-ocr-trigger" onclick="captureOCR()"><i class="fas fa-font"></i> YAZIYI TARA (OCR)</button>
+            <button onclick="toggleCamera()" style="background:#333; color:white; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">KAPAT</button>
+        </div>
+    </div>
 
     <div id="resultsArea"></div>
-
 </div>
 
 <div class="floating-cart" onclick="openCart()">
@@ -126,15 +126,13 @@
 <div id="cartModal" class="modal">
     <div class="modal-content">
         <span onclick="closeCart()" style="float:right; cursor:pointer; font-size:28px;">&times;</span>
-        <h2 style="margin-top:0; font-weight:800;">Sepetim</h2>
+        <h2 style="margin:0; font-weight:800;">Sepetim</h2>
         <div id="cartItems"></div>
-        <div style="margin-top:15px; text-align:right; font-size:18px; font-weight:800;">
-            TOPLAM: <span id="cartTotal" style="color:var(--accent);">0.00</span>
-        </div>
+        <div style="margin-top:15px; text-align:right; font-size:18px; font-weight:800;">TOPLAM: <span id="cartTotal" style="color:var(--accent);">0.00</span></div>
         <input type="text" id="customerEmail" class="login-input" style="margin-top:20px;" placeholder="Müşteri Maili (Opsiyonel)">
         <div style="display:flex; gap:12px; margin-top:20px;">
-            <button onclick="saveAndExport()" style="flex:1; background:#2ecc71; color:white; border:none; padding:15px; border-radius:12px; font-weight:800;">EXCEL İNDİR</button>
-            <button onclick="sendMail()" id="btnMail" style="flex:1; background:#000; color:white; border:none; padding:15px; border-radius:12px; font-weight:800;">TABLOYU MAİL AT</button>
+            <button onclick="saveAndExport()" style="flex:1; background:#2ecc71; color:white; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">EXCEL İNDİR</button>
+            <button onclick="sendMail()" id="btnMail" style="flex:1; background:#000; color:white; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">TABLOYU MAİL AT</button>
         </div>
     </div>
 </div>
@@ -142,16 +140,15 @@
 <div id="historyModal" class="modal">
     <div class="modal-content">
         <span onclick="document.getElementById('historyModal').style.display='none'" style="float:right; cursor:pointer; font-size:28px;">&times;</span>
-        <h2 style="margin-top:0; font-weight:800;">Sipariş Geçmişi</h2>
+        <h2 style="margin:0; font-weight:800;">Sipariş Geçmişi</h2>
         <div id="historyList" style="margin-top:20px;"></div>
-        <p style="color:#999; font-size:11px; text-align:center; margin-top:20px;">* Geçmiş siparişler sadece bu cihazda saklanır.</p>
     </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-    // --- 1. SABİTLER ---
+    // --- 1. AYARLAR VE VERİLER ---
     const EMAILJS_SERVICE_ID = "service_qh7mngr";
     const EMAILJS_TEMPLATE_ID = "template_2e5jxvh";
     const EMAILJS_PUBLIC_KEY = "VSRTcl2JLxhmNWT4a";
@@ -168,384 +165,222 @@
         "admin": { name: "Test Admin", pass: "1234" }
     };
 
-    // --- 2. SES VE KAMERA AYARLARI ---
-    const beepSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU");
-    let html5QrcodeScanner = null;
+    const beepSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
+    let html5QrcodeScanner = null, currentUser = null, inventory = [], cart = [], groupedResults = {}, isDataLoaded = false;
 
-    let currentUser = null, inventory = [], cart = [];
-    let groupedResults = {}; 
-    let isDataLoaded = false;
-
-    // --- 3. PWA (Mobil Uygulama) SERVICE WORKER ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-             // service-worker.js dosyası varsa kaydeder, yoksa hata vermez, sessizce geçer
-            navigator.serviceWorker.register('./service-worker.js').catch(err => console.log(err));
-        });
-    }
-
-    // --- 4. GİRİŞ İŞLEMLERİ ---
-    window.checkLogin = function() {
-        let rawUser = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, ''); 
-        const p = document.getElementById('loginPass').value;
-        const errorBox = document.getElementById('loginError');
-
-        if(USERS[rawUser] && USERS[rawUser].pass === p) { 
-            errorBox.style.display = 'none';
-            localStorage.setItem('activeUser', rawUser); 
-            loginSuccess(rawUser); 
-        } else { 
-            errorBox.style.display = 'block';
-            errorBox.innerText = "Kullanıcı adı veya şifre hatalı!";
-        }
-    }
-
-    window.loginSuccess = function(k) { 
-        currentUser = USERS[k]; 
-        document.getElementById('displayUserName').innerText = currentUser.name; 
-        document.getElementById('loginOverlay').style.display = 'none'; 
-    }
-
-    // --- 5. YÜKLEME ---
+    // --- 2. BAŞLANGIÇ VE GİRİŞ ---
     window.onload = function() {
-        (function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
-
+        emailjs.init(EMAILJS_PUBLIC_KEY);
         const saved = localStorage.getItem('activeUser');
         if(saved && USERS[saved]) loginSuccess(saved);
 
         document.getElementById("btnLogin").onclick = checkLogin;
-        document.getElementById("loginPass").addEventListener("keypress", function(e) { if (e.key === "Enter") checkLogin(); });
-        document.getElementById("searchInput").addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); searchProduct(); } });
+        document.getElementById("searchInput").addEventListener("keypress", (e) => { if (e.key === "Enter") searchProduct(); });
 
-        const debugEl = document.getElementById('debugStatus');
-        debugEl.innerText = "Veriler İndiriliyor...";
-
-        Papa.parse('data.csv', { 
-            download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy', 
-            worker: false,
-            complete: function(r) {
-                inventory = r.data.filter(row => {
-                    const str = Object.values(row).join('').trim();
-                    return str.length > 3 && (row['Product'] || row['Reference']);
-                });
+        Papa.parse('data.csv', {
+            download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy',
+            complete: (r) => {
+                inventory = r.data.filter(row => row['Product'] || row['Reference']);
                 isDataLoaded = true;
-                debugEl.style.backgroundColor = "#27ae60";
-                debugEl.innerText = `Sistem Hazır! (${inventory.length} Ürün)`;
-                setTimeout(() => { debugEl.style.display = 'none'; }, 3000);
-            },
-            error: function(err) {
-                debugEl.style.backgroundColor = "red";
-                debugEl.innerText = "HATA: Veri dosyası okunamadı!";
+                document.getElementById('debugStatus').style.display = 'none';
             }
         });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+        }
     };
+
+    function checkLogin() {
+        let u = document.getElementById('loginUser').value.trim().toLowerCase();
+        let p = document.getElementById('loginPass').value;
+        if(USERS[u] && USERS[u].pass === p) {
+            localStorage.setItem('activeUser', u);
+            loginSuccess(u);
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').innerText = "Hatalı giriş!";
+        }
+    }
+
+    function loginSuccess(k) {
+        currentUser = USERS[k];
+        document.getElementById('displayUserName').innerText = currentUser.name;
+        document.getElementById('loginOverlay').style.display = 'none';
+    }
 
     function logout() { localStorage.removeItem('activeUser'); location.reload(); }
 
-    // --- 6. KAMERA FONKSİYONLARI ---
+    // --- 3. KAMERA, BARKOD VE OCR ---
     window.toggleCamera = function() {
-        const readerDiv = document.getElementById('reader');
-        
-        // Açıksa kapat
+        const container = document.getElementById('reader-container');
         if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear();
-            html5QrcodeScanner = null;
-            readerDiv.style.display = 'none';
-            return;
+            html5QrcodeScanner.clear(); html5QrcodeScanner = null;
+            container.style.display = 'none'; return;
         }
-
-        // Kapalıysa aç
-        readerDiv.style.display = 'block';
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            false
-        );
+        container.style.display = 'block';
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
         html5QrcodeScanner.render(onScanSuccess);
-    }
+    };
 
     function onScanSuccess(decodedText) {
-        // Ses çal
-        beepSound.play().catch(e => console.log("Ses hatası (tarayıcı izni gerekebilir)"));
-        
-        // Kodu kutuya yaz
+        beepSound.play().catch(() => {});
         document.getElementById('searchInput').value = decodedText;
-        
-        // Aramayı tetikle
-        searchProduct();
-        
-        // Kamerayı kapat ve bildirim ver
-        toggleCamera();
-        showToast("📸 Barkod Okundu: " + decodedText);
+        searchProduct(); toggleCamera();
+        showToast("📸 Barkod: " + decodedText);
     }
 
-    // --- 7. ARAMA VE LİSTELEME ---
-    window.searchProduct = function() {
-        if(!isDataLoaded) { showToast("Veriler yükleniyor, bekleyin..."); return; }
+    window.captureOCR = async function() {
+        const video = document.querySelector('#reader video');
+        if (!video) return showToast("Kamera aktif değil!");
+        showToast("🔍 Analiz ediliyor...");
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        try {
+            const result = await Tesseract.recognize(canvas, 'eng');
+            const cleaned = result.data.text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (cleaned) {
+                beepSound.play().catch(() => {});
+                document.getElementById('searchInput').value = cleaned;
+                searchProduct(); toggleCamera();
+                showToast("📝 Algılanan: " + cleaned);
+            } else showToast("Yazı algılanamadı.");
+        } catch { showToast("OCR Hatası!"); }
+    };
+
+    // --- 4. ARAMA VE SEPET ---
+    function searchProduct() {
         const q = document.getElementById('searchInput').value.toUpperCase().trim();
         if(!q) return;
-        
-        const allMatches = inventory.filter(i => {
-            const code = i.Product || i.Reference || "";
-            return code.toString().toUpperCase().includes(q) || (i.Description && i.Description.toUpperCase().includes(q));
-        });
-
-        if(allMatches.length === 0) {
-            showToast("Ürün bulunamadı!");
-            document.getElementById('resultsArea').innerHTML = "";
-            return;
-        }
-
+        const allMatches = inventory.filter(i => (i.Product || "").toUpperCase().includes(q) || (i.Description || "").toUpperCase().includes(q));
+        if(allMatches.length === 0) return showToast("Ürün bulunamadı!");
         groupedResults = {};
         allMatches.forEach(item => {
-            const uniqueCode = item.Product || item.Reference || "UNK";
-            if(!groupedResults[uniqueCode]) groupedResults[uniqueCode] = [];
-            groupedResults[uniqueCode].push(item);
+            const code = item.Product || item.Reference;
+            if(!groupedResults[code]) groupedResults[code] = [];
+            groupedResults[code].push(item);
         });
-
         renderResults();
-        document.getElementById('searchInput').value = ""; // Aramadan sonra temizle
+        document.getElementById('searchInput').value = "";
     }
 
     function renderResults() {
-        const area = document.getElementById('resultsArea');
-        area.innerHTML = ""; 
-
+        const area = document.getElementById('resultsArea'); area.innerHTML = "";
         Object.keys(groupedResults).forEach(code => {
-            const group = groupedResults[code];
-            const first = group[0]; 
-            
-            let rawPrice = first['Tariff Price'] || first['Base Price'] || "0";
-            let currency = first['Currency'] || "TL";
-            let displayPrice = `${rawPrice} ${currency}`;
-
-            const cardDiv = document.createElement('div');
-            cardDiv.className = 'product-card';
-            
-            let html = `
-                <img src="${first.ImageURL || 'https://via.placeholder.com/400'}" class="product-img">
+            const group = groupedResults[code], first = group[0];
+            const card = document.createElement('div'); card.className = 'product-card';
+            card.innerHTML = `
+                <img src="${first.ImageURL || ''}" class="product-img">
                 <div class="product-info-wrapper">
-                    <div>
-                        <h3 style="margin:0; font-weight: 800; font-size:16px;">${first.Description || "İsimsiz"}</h3>
-                        <p style="color:#666; font-weight: 600; margin:5px 0;">${code}</p>
-                        <span class="price-tag">${displayPrice}</span>
-                        
-                        <span onclick="toggleInfo('${code}')" style="color:var(--accent); cursor:pointer; text-decoration:underline; font-size:12px; font-weight:700;">
-                            <i class="fas fa-info-circle"></i> EAN & Açıklama Göster
-                        </span>
-                        <div id="info-${code}" class="info-box">
-                            <b>EAN:</b> ${first.EAN || "-"}<br>
-                            <p style="margin-top:5px; line-height:1.4;">${first['Long Description'] || "Açıklama yok."}</p>
-                        </div>
-                    </div>
-
-                    <div class="toggle-btn" onclick="toggleStock('${code}')">
-                        BEDEN VE STOK GÖR <i class="fas fa-chevron-down"></i>
-                    </div>
-
-                    <div id="stock-${code}" class="stock-section">`;
-
-            group.forEach((item, index) => {
-                const stock = parseInt(item['Stock Quantity'] || 0);
-                const size = item['EUR Size'] || item['Beden'] || "-";
-                const inputId = `qty-${code}-${index}`;
-                
-                html += `
-                    <div class="size-row">
-                        <div><b>${size}</b><br><small style="color:#888;">Stok: ${stock}</small></div>
-                        <div class="qty-control">
-                            <button class="btn-qty" onclick="changeQty('${inputId}',-1)">-</button>
-                            <input type="number" id="${inputId}" class="qty-input" value="0" min="0" max="${stock}" 
-                                   onfocus="if(this.value=='0') this.value=''" 
-                                   onblur="if(this.value=='') this.value='0'"
-                                   oninput="if(this.value>${stock})this.value=${stock}">
-                            <button class="btn-qty" style="background:var(--accent); color:white;" onclick="changeQty('${inputId}',1,${stock})">+</button>
-                        </div>
-                    </div>`;
-            });
-
-            html += `<button class="btn-add-cart" onclick="addToCart('${code}')">SEPETE EKLE</button>
+                    <h3 style="margin:0; font-size:16px;">${first.Description}</h3>
+                    <p style="color:#666; margin:5px 0;">${code}</p>
+                    <span class="price-tag">${first['Tariff Price']} ${first['Currency']}</span>
+                    <div class="toggle-btn" onclick="toggleStock('${code}')">BEDEN VE STOK GÖR</div>
+                    <div id="stock-${code}" class="stock-section">
+                        ${group.map((item, idx) => `
+                            <div class="size-row">
+                                <b>${item['EUR Size']} (Stok: ${item['Stock Quantity']})</b>
+                                <div class="qty-control">
+                                    <button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',-1)">-</button>
+                                    <input type="number" id="qty-${code}-${idx}" class="qty-input" value="0" min="0" max="${item['Stock Quantity']}">
+                                    <button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',1,${item['Stock Quantity']})">+</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                        <button class="btn-add-cart" onclick="addToCart('${code}')">SEPETE EKLE</button>
                     </div>
                 </div>`;
-            
-            cardDiv.innerHTML = html;
-            area.appendChild(cardDiv);
+            area.appendChild(card);
         });
     }
 
-    // --- 8. ETKİLEŞİM VE SEPET ---
-    window.toggleInfo = function(code) {
-        const el = document.getElementById(`info-${code}`);
-        el.style.display = el.style.display === 'block' ? 'none' : 'block';
-    }
-
-    window.toggleStock = function(code) {
+    window.toggleStock = (code) => {
         const el = document.getElementById(`stock-${code}`);
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
-    }
+    };
 
-    window.changeQty = function(id, d, max) {
+    window.changeQty = (id, d, max) => {
         const el = document.getElementById(id);
-        if(!el) return;
-        let v = (el.value === "" ? 0 : parseInt(el.value)) + d;
-        if(v >= 0 && v <= max) el.value = v;
-    }
+        let v = parseInt(el.value) + d;
+        if(v >= 0 && (!max || v <= max)) el.value = v;
+    };
 
-    window.addToCart = function(code) {
-        const d = document.getElementById('dealerName').value.trim();
-        if(!d) { showToast("Bayi adı zorunlu!"); return; }
-
-        const group = groupedResults[code]; 
-        if(!group) return;
-
-        let addedCount = 0;
-        const first = group[0];
-        let rawPrice = first['Tariff Price'] || first['Base Price'] || "0";
-        let priceVal = parseFloat(String(rawPrice).replace(',', '.'));
-        let currency = first['Currency'] || "TL";
-
-        group.forEach((item, index) => {
-            const inputId = `qty-${code}-${index}`;
-            const el = document.getElementById(inputId);
-            const q = el.value === "" ? 0 : parseInt(el.value);
-            
+    window.addToCart = (code) => {
+        const dealer = document.getElementById('dealerName').value.trim();
+        if(!dealer) return showToast("Bayi adı giriniz!");
+        const group = groupedResults[code];
+        let added = 0;
+        group.forEach((item, idx) => {
+            const q = parseInt(document.getElementById(`qty-${code}-${idx}`).value);
             if(q > 0) {
-                cart.push({
-                    img: item.ImageURL, code: item.Product || item.Reference, name: item.Description,
-                    size: item['EUR Size'] || item['Beden'], qty: q, price: priceVal, currency: currency, dealer: d
-                });
-                addedCount += q;
-                el.value = 0;
+                cart.push({ ...item, qty: q, price: parseFloat(item['Tariff Price']), dealer: dealer });
+                added += q; document.getElementById(`qty-${code}-${idx}`).value = 0;
             }
         });
+        if(added > 0) { updateUI(); showToast("Eklendi."); }
+    };
 
-        if(addedCount > 0) { updateUI(); showToast(`${addedCount} adet sepete eklendi.`); } 
-        else { showToast("Lütfen adet girin."); }
+    function updateUI() {
+        document.getElementById('cartBadge').innerText = cart.length;
+        const total = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+        document.getElementById('cartTotal').innerText = total.toFixed(2);
     }
 
-    function updateUI() { 
-        document.getElementById('cartBadge').innerText = cart.length; 
-        let total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-        document.getElementById('cartTotal').innerText = total.toFixed(2) + " " + (cart[0]?.currency || "");
-    }
-
-    // --- 9. GEÇMİŞ SİPARİŞLER (HISTORY) ---
-    window.saveOrderToHistory = function(orderCart, dealer) {
-        if(!orderCart || orderCart.length === 0) return;
-        let total = orderCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-        let totalQty = orderCart.reduce((acc, item) => acc + item.qty, 0);
-        let currency = orderCart[0]?.currency || "TL";
-        const orderData = {
-            id: Date.now(),
-            date: new Date().toLocaleDateString('tr-TR') + " " + new Date().toLocaleTimeString('tr-TR'),
-            dealer: dealer,
-            total: total.toFixed(2),
-            currency: currency,
-            qty: totalQty,
-            items: JSON.parse(JSON.stringify(orderCart))
-        };
-        let history = JSON.parse(localStorage.getItem('orderHistory')) || [];
-        history.unshift(orderData);
-        if(history.length > 50) history.pop();
-        localStorage.setItem('orderHistory', JSON.stringify(history));
-    }
-
-    window.openHistory = function() {
-        const modal = document.getElementById('historyModal');
-        const list = document.getElementById('historyList');
-        const history = JSON.parse(localStorage.getItem('orderHistory')) || [];
-        if(history.length === 0) {
-            list.innerHTML = "<p style='text-align:center;'>Henüz geçmiş sipariş yok.</p>";
-        } else {
-            list.innerHTML = "";
-            history.forEach(order => {
-                list.innerHTML += `
-                    <div class="history-item">
-                        <div class="history-info">
-                            <b>${order.dealer}</b><br>
-                            <span style="color:#666;">${order.date}</span><br>
-                            <span>${order.qty} Adet - <b>${order.total} ${order.currency}</b></span>
-                        </div>
-                        <button class="history-btn" onclick="downloadHistoryExcel(${order.id})"><i class="fas fa-file-excel"></i> Excel</button>
-                    </div>`;
-            });
-        }
-        modal.style.display = 'block';
-    }
-
-    window.downloadHistoryExcel = function(id) {
-        const history = JSON.parse(localStorage.getItem('orderHistory')) || [];
-        const order = history.find(o => o.id === id);
-        if(order) {
-            const ws = XLSX.utils.json_to_sheet(order.items);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Siparis");
-            XLSX.writeFile(wb, `GecmisSiparis_${order.dealer}_${order.id}.xlsx`);
-        }
-    }
-
-    // --- 10. EXCEL & MAIL ---
-    window.saveAndExport = function() {
+    // --- 5. EXCEL, MAIL VE GEÇMİŞ ---
+    window.saveAndExport = () => {
+        if(cart.length === 0) return;
         saveOrderToHistory(cart, document.getElementById('dealerName').value);
-        exportToExcel();
-        showToast("Excel indirildi ve Geçmişe kaydedildi.");
-    }
-
-    window.exportToExcel = function() {
-        const ws = XLSX.utils.json_to_sheet(cart); 
+        const ws = XLSX.utils.json_to_sheet(cart);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Siparis");
-        XLSX.writeFile(wb, `AsSpor_${document.getElementById('dealerName').value}.xlsx`);
-    }
+        XLSX.writeFile(wb, `Siparis_${document.getElementById('dealerName').value}.xlsx`);
+    };
 
-    window.sendMail = function() {
-        const btn = document.getElementById('btnMail'); 
-        const dealer = document.getElementById('dealerName').value;
-        if(!dealer) { showToast("Bayi adı giriniz!"); return; }
-
+    window.sendMail = () => {
+        const btn = document.getElementById('btnMail');
         btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
-        
-        // 3 parantezli {{{order_details}}} kullandığın için burada HTML tablo oluşturuyoruz
-        let tableHTML = `<table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:12px;"><thead style="background:#000; color:#fff;"><tr><th style="padding:8px;">Kod</th><th style="padding:8px;">Ürün</th><th style="padding:8px;">Beden</th><th style="padding:8px;">Adet</th><th style="padding:8px;">Toplam</th></tr></thead><tbody>`;
-        let totalVal = 0; let currency = cart[0]?.currency || "";
-        cart.forEach(i => {
-            let rowTotal = i.price * i.qty; totalVal += rowTotal;
-            tableHTML += `<tr style="border-bottom:1px solid #ddd;"><td style="padding:8px;">${i.code}</td><td style="padding:8px;">${i.name}</td><td style="padding:8px;">${i.size}</td><td style="padding:8px;">${i.qty}</td><td style="padding:8px;">${rowTotal.toFixed(2)}</td></tr>`;
-        });
-        tableHTML += `<tr style="background:#f0f0f0; font-weight:bold;"><td colspan="4" style="padding:8px; text-align:right;">GENEL TOPLAM:</td><td style="padding:8px;">${totalVal.toFixed(2)} ${currency}</td></tr></tbody></table>`;
-
-        const params = { manager: currentUser.name, dealer: dealer, customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : ""), order_details: tableHTML, total_qty: cart.length };
-        
+        let table = `<table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th></tr>`;
+        cart.forEach(i => table += `<tr><td>${i.Product}</td><td>${i.Description}</td><td>${i['EUR Size']}</td><td>${i.qty}</td></tr>`);
+        table += `</table>`;
+        const params = { manager: currentUser.name, dealer: document.getElementById('dealerName').value, customer_email: FIXED_EMAILS, order_details: table, total_qty: cart.length };
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).then(() => {
-            saveOrderToHistory(cart, dealer);
-            showToast("Mail Gönderildi ve Kaydedildi!"); 
-            btn.disabled = false; btn.innerText = "TABLOYU MAİL AT"; 
+            saveOrderToHistory(cart, params.dealer);
+            showToast("Gönderildi!"); btn.disabled = false; btn.innerText = "TABLOYU MAİL AT";
             cart = []; updateUI(); closeCart();
-        }, (err) => { alert("Mail Hatası!"); btn.disabled = false; });
-    }
-
-    // --- MODAL FONKSİYONLARI ---
-    window.openCart = function() {
-        if(cart.length === 0) { showToast("Sepet boş!"); return; }
-        const list = document.getElementById('cartItems'); list.innerHTML = "";
-        cart.forEach((item, index) => {
-            list.innerHTML += `
-                <div class="cart-item">
-                    <img src="${item.img || 'https://via.placeholder.com/60'}" class="cart-thumb">
-                    <div style="flex:1">
-                        <b>${item.code}</b><br><small>${item.size} - ${item.qty} Adet</small><br>
-                        <b style="color:var(--accent)">${(item.price * item.qty).toFixed(2)} ${item.currency}</b>
-                    </div>
-                    <i class="fas fa-trash-alt" onclick="removeFromCart(${index})" style="color:red; cursor:pointer;"></i>
-                </div>`;
         });
-        updateUI();
-        document.getElementById('cartModal').style.display = 'block';
+    };
+
+    function saveOrderToHistory(c, d) {
+        let history = JSON.parse(localStorage.getItem('orderHistory')) || [];
+        history.unshift({ id: Date.now(), date: new Date().toLocaleString(), dealer: d, items: c });
+        localStorage.setItem('orderHistory', JSON.stringify(history.slice(0, 50)));
     }
 
-    window.removeFromCart = function(i) { cart.splice(i, 1); openCart(); if(cart.length===0) closeCart(); }
-    window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; }
-    window.showToast = function(m) { const t=document.getElementById("toast"); t.innerText=m; t.className="show"; setTimeout(()=>t.className="", 3000); }
+    window.openHistory = () => {
+        const list = document.getElementById('historyList');
+        const history = JSON.parse(localStorage.getItem('orderHistory')) || [];
+        list.innerHTML = history.length ? history.map(o => `<div class="history-item"><div><b>${o.dealer}</b><br>${o.date}</div><button class="history-btn" onclick="downloadHistoryExcel(${o.id})">Excel</button></div>`).join('') : "Geçmiş yok.";
+        document.getElementById('historyModal').style.display = 'block';
+    };
+
+    window.downloadHistoryExcel = (id) => {
+        const order = JSON.parse(localStorage.getItem('orderHistory')).find(o => o.id === id);
+        const ws = XLSX.utils.json_to_sheet(order.items);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Siparis");
+        XLSX.writeFile(wb, `Gecmis_${order.dealer}.xlsx`);
+    };
+
+    window.openCart = () => {
+        const list = document.getElementById('cartItems');
+        list.innerHTML = cart.map((item, idx) => `<div class="cart-item"><b>${item.Product}</b> - ${item['EUR Size']} (${item.qty} Adet) <i class="fas fa-trash" onclick="removeFromCart(${idx})" style="color:red; cursor:pointer;"></i></div>`).join('');
+        document.getElementById('cartModal').style.display = 'block';
+    };
+
+    window.removeFromCart = (i) => { cart.splice(i, 1); openCart(); updateUI(); };
+    window.closeCart = () => document.getElementById('cartModal').style.display = 'none';
+    window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => t.className = "", 3000); };
 </script>
 </body>
 </html>
