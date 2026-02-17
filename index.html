@@ -16,7 +16,7 @@
         :root { --primary: #000000; --accent: #00AEEF; --bg: #f8f9fb; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 120px; color: #1a1a1a; }
         
-        #debugStatus { background: #f39c12; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; display: block; }
+        #debugStatus { background: #f39c12; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; }
         
         #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .login-box { background: white; width: 100%; max-width: 350px; padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
@@ -57,16 +57,17 @@
 </head>
 <body>
 
-<div id="debugStatus">Veriler Yükleniyor... (Giriş Yapabilirsiniz)</div>
+<div id="debugStatus">Sistem Başlatılıyor...</div>
 
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin: 0; font-weight: 800;">AS SPOR</h2>
         <p style="color:#666; font-size:13px; margin-bottom:20px;">Showroom Personel Girişi</p>
+        
         <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı (örn: lutfuozturk)" autocomplete="off">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
-        <button onclick="checkLogin()" class="login-btn">GİRİŞ YAP</button>
-        <div id="loginError" class="error-msg">Kullanıcı adı veya şifre hatalı!</div>
+        <button id="btnLogin" class="login-btn">GİRİŞ YAP</button>
+        <div id="loginError" class="error-msg"></div>
     </div>
 </div>
 
@@ -90,7 +91,6 @@
             <h3 id="pName" style="margin:0; font-weight: 800;"></h3>
             <p id="pCode" style="color:#666; font-weight: 600; margin:5px 0;"></p>
             <span id="pPrice" class="price-tag"></span>
-            
             <span onclick="toggleDetails()" style="color:var(--accent); cursor:pointer; text-decoration:underline; font-size:13px; font-weight:700;">Ürün Detayları</span>
             <div id="descBox" style="display:none; background:#f9f9f9; padding:15px; margin-top:10px; border-radius:12px; font-size:13px;">
                 <b>EAN:</b> <span id="pEAN"></span><br><br>
@@ -130,6 +130,7 @@
     const EMAILJS_PUBLIC_KEY = "VSRTcl2JLxhmNWT4a";
     const FIXED_EMAILS = "emel@asspor.com, siparis@asspor.com";
 
+    // KULLANICI LİSTESİ (Kullanıcı Adı: lutfuozturk formatında)
     const USERS = {
         "adnankaya": { name: "Adnan Kaya", pass: "1234" },
         "cinargokce": { name: "Çınar Gökçe", pass: "1234" },
@@ -142,51 +143,10 @@
     };
 
     let currentUser = null, inventory = [], currentGroup = [], cart = [];
+    let isDataLoaded = false;
 
-    (function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
-
-    window.onload = () => {
-        const saved = localStorage.getItem('activeUser');
-        if(saved && USERS[saved]) loginSuccess(saved);
-        
-        const debugEl = document.getElementById('debugStatus');
-
-        // BÜYÜK DOSYALAR İÇİN WORKER MODU (Tarayıcıyı dondurmaz)
-        Papa.parse('data.csv', { 
-            download: true, 
-            header: true, 
-            worker: true, // BU SATIR HAYAT KURTARIR
-            delimiter: "", // Otomatik algılasın
-            skipEmptyLines: 'greedy', 
-            complete: function(r){ 
-                inventory = r.data.filter(row => {
-                    // Satırın dolu olup olmadığını basitçe kontrol et
-                    return row['Product'] || row['Reference'] || (Object.values(row).length > 3 && Object.values(row)[0]); 
-                });
-                
-                debugEl.style.backgroundColor = "#27ae60";
-                debugEl.innerText = `Sistem Hazır! (${inventory.length} Ürün)`;
-                setTimeout(() => { debugEl.style.display = 'none'; }, 3000);
-            },
-            error: function(err) {
-                debugEl.style.backgroundColor = "red";
-                debugEl.innerText = "HATA: Veri dosyası okunamadı!";
-            }
-        });
-
-        document.getElementById("loginPass").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") checkLogin();
-        });
-
-        document.getElementById("searchInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                searchProduct();
-            }
-        });
-    };
-
-    function checkLogin() {
+    // --- GİRİŞ FONKSİYONLARI (GLOBAL TANIMLI) ---
+    window.checkLogin = function() {
         let rawUser = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, ''); 
         const p = document.getElementById('loginPass').value;
         const errorBox = document.getElementById('loginError');
@@ -197,18 +157,66 @@
             loginSuccess(rawUser); 
         } else { 
             errorBox.style.display = 'block';
+            errorBox.innerText = "Kullanıcı adı veya şifre hatalı!";
         }
     }
 
-    function loginSuccess(k) { 
+    window.loginSuccess = function(k) { 
         currentUser = USERS[k]; 
         document.getElementById('displayUserName').innerText = currentUser.name; 
         document.getElementById('loginOverlay').style.display = 'none'; 
     }
-    
+
+    // SAYFA YÜKLENDİĞİNDE
+    window.onload = function() {
+        (function(){ emailjs.init(EMAILJS_PUBLIC_KEY); })();
+
+        // Önceki oturumu kontrol et
+        const saved = localStorage.getItem('activeUser');
+        if(saved && USERS[saved]) loginSuccess(saved);
+
+        // Giriş butonu olayları
+        document.getElementById("btnLogin").onclick = checkLogin;
+        document.getElementById("loginPass").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") checkLogin();
+        });
+        document.getElementById("searchInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") { e.preventDefault(); searchProduct(); }
+        });
+
+        // VERİ YÜKLEME (Arka planda çalışır, girişi engellemez)
+        const debugEl = document.getElementById('debugStatus');
+        debugEl.innerText = "Veriler İndiriliyor...";
+
+        Papa.parse('data.csv', { 
+            download: true, 
+            header: true, 
+            delimiter: ";", 
+            skipEmptyLines: 'greedy', 
+            worker: false, // Tarayıcı uyumu için kapalı, gerekirse açılabilir
+            complete: function(r) {
+                // Boş satır temizliği
+                inventory = r.data.filter(row => {
+                    const str = Object.values(row).join('').trim();
+                    return str.length > 3 && row['Product']; // Sadece Product'ı olanları al
+                });
+                isDataLoaded = true;
+                debugEl.style.backgroundColor = "#27ae60";
+                debugEl.innerText = `Sistem Hazır! (${inventory.length} Ürün)`;
+                setTimeout(() => { debugEl.style.display = 'none'; }, 3000);
+            },
+            error: function(err) {
+                debugEl.style.backgroundColor = "red";
+                debugEl.innerText = "HATA: Veri dosyası okunamadı!";
+            }
+        });
+    };
+
     function logout() { localStorage.removeItem('activeUser'); location.reload(); }
 
     function searchProduct() {
+        if(!isDataLoaded) { showToast("Veriler henüz yüklenmedi, bekleyin!"); return; }
+
         const q = document.getElementById('searchInput').value.toUpperCase().trim();
         if(!q) return;
         
@@ -223,22 +231,21 @@
     function renderProduct(g) {
         const first = g[0];
         document.getElementById('pImg').src = first.ImageURL || "https://via.placeholder.com/400";
-        document.getElementById('pName').innerText = first.Description || first['Ürün Adı'] || "İsimsiz";
-        document.getElementById('pCode').innerText = first.Reference || first.Product || first['Ürün Kodu'];
+        document.getElementById('pName').innerText = first.Description || "İsimsiz";
+        document.getElementById('pCode').innerText = first.Reference || first.Product;
         document.getElementById('pEAN').innerText = first.EAN || "-";
         document.getElementById('pLongDesc').innerText = first['Long Description'] || "Detay yok.";
         
-        let price = first['Tariff Price'] || first['Base Price'] || first['Fiyat'] || "0";
+        let price = first['Tariff Price'] || first['Base Price'] || "0";
         let currency = first['Currency'] || "TL";
         document.getElementById('pPrice').innerText = `${price} ${currency}`;
 
         const list = document.getElementById('sizeList'); list.innerHTML = "";
         g.forEach((item, i) => {
-            const stock = parseInt(item['Stock Quantity'] || item['Miktar'] || 0);
-            const size = item['EUR Size'] || item['Beden'] || "-";
+            const stock = parseInt(item['Stock Quantity'] || 0);
             list.innerHTML += `
                 <div class="size-row">
-                    <div><b>${size}</b><br><small>Stok: ${stock}</small></div>
+                    <div><b>${item['EUR Size']}</b><br><small>Stok: ${stock}</small></div>
                     <div class="qty-control">
                         <button class="btn-qty" onclick="changeQty(${i},-1)">-</button>
                         <input type="number" id="qty-${i}" class="qty-input" value="0" min="0" max="${stock}" 
@@ -278,7 +285,7 @@
             if(q > 0) {
                 cart.push({ 
                     img: item.ImageURL, code: item.Reference || item.Product, name: item.Description, 
-                    size: item['EUR Size'] || item['Beden'], qty: q, price: priceVal, currency: currency, dealer: d 
+                    size: item['EUR Size'], qty: q, price: priceVal, currency: currency, dealer: d 
                 });
                 added += q;
             }
