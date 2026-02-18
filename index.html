@@ -549,9 +549,8 @@ function renderResults() {
         card.style.animationDelay = (i * 0.04) + 's';
         card.onclick = function() { openProductModal(code); };
 
-        // FIX: use onerror to hide broken image instead of showing placeholder icon
         var imgHtml = f['ImageURL']
-            ? '<img src="' + escHtml(f['ImageURL']) + '" class="product-img" onerror="this.parentNode.replaceChild(Object.assign(document.createElement(\'div\'), {className:\'product-no-img\',innerHTML:\'<i class=\\\"fas fa-tshirt\\\"></i>\'}), this)" alt="">'
+            ? '<img src="' + escHtml(f['ImageURL']) + '" class="product-img" onerror="this.style.display=\'none\'" alt="">'
             : '<div class="product-no-img"><i class="fas fa-tshirt"></i></div>';
 
         card.innerHTML = imgHtml + '<div class="product-info-wrapper">'
