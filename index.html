@@ -12,7 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- FIX #1: Use the core html5-qrcode library (not the scanner wrapper) so we can access the raw video element for OCR -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
     <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -40,18 +41,29 @@
         .btn-scan { background: var(--primary); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
         .btn-camera { background: var(--accent); color: white; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 20px; }
         
-        /* --- YENİ SADELRŞTİRİLMİŞ KAMERA ALANI --- */
+        /* FIX #2: reader-container is position:relative so the laser sits correctly inside the camera view */
         #reader-container { width: 100%; margin-top: 15px; display: none; position: relative; }
-        #reader { border-radius: 20px; overflow: hidden; border: 3px solid var(--accent); background: #000; position: relative; }
+        #reader { border-radius: 20px; overflow: hidden; border: 3px solid var(--accent); background: #000; width: 100%; }
+        /* Hide html5-qrcode's own UI chrome — we use our own buttons */
         #reader__dashboard, #reader__status_span, #reader button, #reader select { display: none !important; }
 
-        /* Lazer Çizgisi */
+        /* FIX #3: Laser is now a child of #reader-container and uses absolute positioning correctly */
         .scanner-laser {
-            position: absolute; top: 50%; left: 10%; width: 80%; height: 2px;
-            background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 12px red;
-            z-index: 10; animation: scanLine 2s infinite ease-in-out;
+            position: absolute;
+            top: 50%; left: 10%; width: 80%; height: 2px;
+            background: rgba(255, 0, 0, 0.75);
+            box-shadow: 0 0 12px red;
+            z-index: 10;
+            pointer-events: none;
+            animation: scanLine 2s infinite ease-in-out;
+            /* offset by half the laser height to truly center */
+            transform: translateY(-1px);
         }
-        @keyframes scanLine { 0% { transform: translateY(-30px); } 50% { transform: translateY(30px); } 100% { transform: translateY(-30px); } }
+        @keyframes scanLine {
+            0%   { top: 30%; }
+            50%  { top: 70%; }
+            100% { top: 30%; }
+        }
 
         .ocr-controls { display: flex; gap: 10px; margin-top: 10px; }
         .btn-ocr-trigger { flex: 1; background: var(--accent); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
@@ -78,6 +90,7 @@
         #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 7000; left: 50%; bottom: 120px; transform: translateX(-50%); font-weight: 600; }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 120px; opacity: 1;} }
+        @keyframes fadeout { from {opacity: 1;} to {opacity: 0;} }
     </style>
 </head>
 <body>
@@ -113,6 +126,7 @@
         <button class="btn-camera" onclick="toggleCamera()"><i class="fas fa-camera"></i></button>
     </div>
 
+    <!-- FIX #4: laser div is now INSIDE reader-container (sibling of #reader) so it overlays the camera correctly -->
     <div id="reader-container">
         <div id="reader"></div>
         <div class="scanner-laser"></div>
@@ -155,7 +169,7 @@
 <div id="toast"></div>
 
 <script>
-    // --- 1. PERSONEL VE SABİTLER (RESTORE EDİLDİ) ---
+    // --- 1. PERSONEL VE SABİTLER ---
     const EMAILJS_SERVICE_ID = "service_qh7mngr";
     const EMAILJS_TEMPLATE_ID = "template_2e5jxvh";
     const EMAILJS_PUBLIC_KEY = "VSRTcl2JLxhmNWT4a";
@@ -173,7 +187,13 @@
     };
 
     const beepSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
-    let html5QrcodeScanner = null, currentUser = null, inventory = [], cart = [], groupedResults = {}, isDataLoaded = false;
+    
+    // FIX #5: Use Html5Qrcode (low-level class) instead of Html5QrcodeScanner
+    // Html5QrcodeScanner wraps the video in shadow DOM — you can't grab it for OCR canvas capture.
+    // Html5Qrcode gives direct camera access AND barcode scanning together.
+    let html5QrCode = null;
+    let isCameraRunning = false;
+    let currentUser = null, inventory = [], cart = [], groupedResults = {}, isDataLoaded = false;
 
     // --- 2. BAŞLATMA ---
     window.onload = function() {
@@ -183,44 +203,149 @@
 
         Papa.parse('data.csv', {
             download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy',
-            complete: (r) => { inventory = r.data.filter(row => row['Product'] || row['Reference']); isDataLoaded = true; document.getElementById('debugStatus').style.display='none'; }
+            complete: (r) => {
+                inventory = r.data.filter(row => row['Product'] || row['Reference']);
+                isDataLoaded = true;
+                document.getElementById('debugStatus').style.display = 'none';
+            }
         });
 
-        document.getElementById("searchInput").addEventListener("keypress", (e) => { if (e.key === "Enter") searchProduct(); });
+        document.getElementById("searchInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") searchProduct();
+        });
     };
 
     function checkLogin() {
         let u = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, '');
         let p = document.getElementById('loginPass').value;
-        if(USERS[u] && USERS[u].pass === p) { localStorage.setItem('activeUser', u); loginSuccess(u); }
-        else { document.getElementById('loginError').style.display='block'; document.getElementById('loginError').innerText="Hatalı giriş!"; }
+        if(USERS[u] && USERS[u].pass === p) {
+            localStorage.setItem('activeUser', u);
+            loginSuccess(u);
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').innerText = "Hatalı giriş!";
+        }
     }
 
-    function loginSuccess(k) { currentUser = USERS[k]; document.getElementById('displayUserName').innerText = currentUser.name; document.getElementById('loginOverlay').style.display = 'none'; }
+    function loginSuccess(k) {
+        currentUser = USERS[k];
+        document.getElementById('displayUserName').innerText = currentUser.name;
+        document.getElementById('loginOverlay').style.display = 'none';
+    }
     function logout() { localStorage.removeItem('activeUser'); location.reload(); }
 
-    // --- 3. KAMERA, BARKOD VE OCR (LAZERLİ SADE ARAYÜZ) ---
-    window.toggleCamera = function() {
+    // --- 3. KAMERA, BARKOD VE OCR (DÜZELTİLMİŞ) ---
+
+    window.toggleCamera = async function() {
         const container = document.getElementById('reader-container');
-        if (html5QrcodeScanner) { html5QrcodeScanner.clear(); html5QrcodeScanner = null; container.style.display = 'none'; return; }
+
+        // FIX #6: await the stop() call so we don't get race conditions on rapid open/close
+        if (isCameraRunning && html5QrCode) {
+            try {
+                await html5QrCode.stop();
+                html5QrCode.clear();
+            } catch(e) {
+                console.warn("Kamera kapatma hatası:", e);
+            }
+            isCameraRunning = false;
+            container.style.display = 'none';
+            return;
+        }
+
         container.style.display = 'block';
-        // İnce yatay şerit tarama alanı (280x80)
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: { width: 280, height: 80 } }, false);
-        html5QrcodeScanner.render((txt) => { beepSound.play().catch(()=>{}); document.getElementById('searchInput').value = txt; searchProduct(); toggleCamera(); showToast("📸 Barkod: " + txt); });
+
+        // FIX #7: Create a fresh Html5Qrcode instance each time (avoids stale state)
+        html5QrCode = new Html5Qrcode("reader");
+
+        const config = {
+            fps: 20,
+            qrbox: { width: 280, height: 80 },   // thin horizontal strip — good for barcodes
+            aspectRatio: 1.7,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.DATA_MATRIX
+            ]
+        };
+
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },  // use back camera on mobile
+                config,
+                // FIX #8: onSuccess callback — no longer calls toggleCamera() internally.
+                // We stop the scanner manually here, preventing a double-stop crash.
+                async (decodedText) => {
+                    beepSound.play().catch(() => {});
+                    document.getElementById('searchInput').value = decodedText;
+                    searchProduct();
+                    showToast("📸 Barkod: " + decodedText);
+                    // Stop camera after successful scan
+                    try {
+                        await html5QrCode.stop();
+                        html5QrCode.clear();
+                    } catch(e) {}
+                    isCameraRunning = false;
+                    container.style.display = 'none';
+                },
+                (errorMsg) => {
+                    // scan errors are normal (no barcode in frame yet) — ignore silently
+                }
+            );
+            isCameraRunning = true;
+        } catch(err) {
+            showToast("Kamera açılamadı: " + err);
+            container.style.display = 'none';
+        }
     };
 
     window.captureOCR = async function() {
+        // FIX #9: With Html5Qrcode we can now reliably grab the video element
         const video = document.querySelector('#reader video');
-        if (!video) return showToast("Kamera aktif değil!");
+        if (!video || !isCameraRunning) return showToast("Kamera aktif değil!");
+        if (video.readyState < 2) return showToast("Kamera henüz hazır değil, tekrar dene.");
+
         showToast("🔍 Analiz ediliyor...");
-        const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
+
         try {
-            const result = await Tesseract.recognize(canvas, 'eng');
-            const cleaned = result.data.text.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-            if (cleaned) { beepSound.play().catch(()=>{}); document.getElementById('searchInput').value = cleaned; searchProduct(); toggleCamera(); showToast("📝 Algılanan: " + cleaned); }
-            else showToast("Okunamadı.");
-        } catch { showToast("OCR Hatası!"); }
+            // FIX #10: Use PSM 8 (single-word mode) — much better for short product codes like BKLITW25.
+            // PSM 6 (block) returns paragraphs of garbage for a single product code.
+            const result = await Tesseract.recognize(canvas, 'eng', {
+                tessedit_pageseg_mode: '8',           // PSM 8 = single word
+                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'  // only alphanumeric
+            });
+
+            const raw = result.data.text.trim();
+            const cleaned = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+            if (cleaned && cleaned.length >= 4) {
+                beepSound.play().catch(() => {});
+                document.getElementById('searchInput').value = cleaned;
+                searchProduct();
+
+                // Close camera after OCR success
+                try {
+                    await html5QrCode.stop();
+                    html5QrCode.clear();
+                } catch(e) {}
+                isCameraRunning = false;
+                document.getElementById('reader-container').style.display = 'none';
+
+                showToast("📝 Algılanan: " + cleaned);
+            } else {
+                showToast("Okunamadı — kodu çerçeveye yaklaştır ve tekrar dene.");
+            }
+        } catch(e) {
+            console.error(e);
+            showToast("OCR Hatası: " + e.message);
+        }
     };
 
     // --- 4. ARAMA VE SEPET ---
@@ -230,16 +355,42 @@
         const matches = inventory.filter(i => (i.Product||"").toUpperCase().includes(q) || (i.Description||"").toUpperCase().includes(q));
         if(matches.length === 0) return showToast("Ürün bulunamadı!");
         groupedResults = {};
-        matches.forEach(item => { const code = item.Product || item.Reference; if(!groupedResults[code]) groupedResults[code] = []; groupedResults[code].push(item); });
-        renderResults(); document.getElementById('searchInput').value = "";
+        matches.forEach(item => {
+            const code = item.Product || item.Reference;
+            if(!groupedResults[code]) groupedResults[code] = [];
+            groupedResults[code].push(item);
+        });
+        renderResults();
+        document.getElementById('searchInput').value = "";
     }
 
     function renderResults() {
-        const area = document.getElementById('resultsArea'); area.innerHTML = "";
+        const area = document.getElementById('resultsArea');
+        area.innerHTML = "";
         Object.keys(groupedResults).forEach(code => {
             const group = groupedResults[code], first = group[0];
-            const card = document.createElement('div'); card.className = 'product-card';
-            card.innerHTML = `<img src="${first.ImageURL || ''}" class="product-img"><div class="product-info-wrapper"><h3>${first.Description}</h3><p>${code}</p><span class="price-tag">${first['Tariff Price']} ${first['Currency']}</span><div class="toggle-btn" onclick="toggleStock('${code}')">BEDEN VE STOK GÖR</div><div id="stock-${code}" class="stock-section">${group.map((item, idx) => `<div class="size-row"><b>${item['EUR Size']} (Stok: ${item['Stock Quantity']})</b><div class="qty-control"><button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',-1)">-</button><input type="number" id="qty-${code}-${idx}" class="qty-input" value="0" min="0"><button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',1,${item['Stock Quantity']})">+</button></div></div>`).join('')}<button class="btn-add-cart" onclick="addToCart('${code}')">SEPETE EKLE</button></div></div>`;
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <img src="${first.ImageURL || ''}" class="product-img">
+                <div class="product-info-wrapper">
+                    <h3>${first.Description}</h3>
+                    <p>${code}</p>
+                    <span class="price-tag">${first['Tariff Price']} ${first['Currency']}</span>
+                    <div class="toggle-btn" onclick="toggleStock('${code}')">BEDEN VE STOK GÖR</div>
+                    <div id="stock-${code}" class="stock-section">
+                        ${group.map((item, idx) => `
+                            <div class="size-row">
+                                <b>${item['EUR Size']} (Stok: ${item['Stock Quantity']})</b>
+                                <div class="qty-control">
+                                    <button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',-1)">-</button>
+                                    <input type="number" id="qty-${code}-${idx}" class="qty-input" value="0" min="0">
+                                    <button class="btn-qty" onclick="changeQty('qty-${code}-${idx}',1,${item['Stock Quantity']})">+</button>
+                                </div>
+                            </div>`).join('')}
+                        <button class="btn-add-cart" onclick="addToCart('${code}')">SEPETE EKLE</button>
+                    </div>
+                </div>`;
             area.appendChild(card);
         });
     }
@@ -258,29 +409,73 @@
         if(added > 0) { updateUI(); showToast("Sepete Eklendi."); }
     };
 
-    function updateUI() { document.getElementById('cartBadge').innerText = cart.length; const total = cart.reduce((a, b) => a + (b.price * b.qty), 0); document.getElementById('cartTotal').innerText = total.toFixed(2) + " " + (cart[0]?.Currency || "TL"); }
+    function updateUI() {
+        document.getElementById('cartBadge').innerText = cart.length;
+        const total = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+        document.getElementById('cartTotal').innerText = total.toFixed(2) + " " + (cart[0]?.Currency || "TL");
+    }
 
     // --- 5. EXCEL, MAIL VE GEÇMİŞ ---
-    function saveAndExport() { if(cart.length === 0) return; saveToHistory(cart, document.getElementById('dealerName').value); const ws = XLSX.utils.json_to_sheet(cart); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Siparis"); XLSX.writeFile(wb, `Siparis_${document.getElementById('dealerName').value}.xlsx`); }
+    function saveAndExport() {
+        if(cart.length === 0) return;
+        saveToHistory(cart, document.getElementById('dealerName').value);
+        const ws = XLSX.utils.json_to_sheet(cart);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Siparis");
+        XLSX.writeFile(wb, `Siparis_${document.getElementById('dealerName').value}.xlsx`);
+    }
 
     function sendMail() {
-        const btn = document.getElementById('btnMail'); btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
+        const btn = document.getElementById('btnMail');
+        btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
         let table = `<table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th></tr>`;
         cart.forEach(i => table += `<tr><td>${i.Product}</td><td>${i.Description}</td><td>${i['EUR Size']}</td><td>${i.qty}</td></tr>`);
         table += `</table>`;
-        const params = { manager: currentUser.name, dealer: document.getElementById('dealerName').value, customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : ""), order_details: table, total_qty: cart.length };
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).then(() => { saveToHistory(cart, params.dealer); showToast("Gönderildi!"); btn.disabled = false; btn.innerText = "TABLOYU MAİL AT"; cart = []; updateUI(); closeCart(); });
+        const params = {
+            manager: currentUser.name,
+            dealer: document.getElementById('dealerName').value,
+            customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : ""),
+            order_details: table,
+            total_qty: cart.length
+        };
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).then(() => {
+            saveToHistory(cart, params.dealer);
+            showToast("Gönderildi!");
+            btn.disabled = false; btn.innerText = "MAİL AT";
+            cart = []; updateUI(); closeCart();
+        });
     }
 
-    function saveToHistory(c, d) { let h = JSON.parse(localStorage.getItem('orderHistory')) || []; h.unshift({ id: Date.now(), date: new Date().toLocaleString(), dealer: d, items: c }); localStorage.setItem('orderHistory', JSON.stringify(h.slice(0, 50))); }
+    function saveToHistory(c, d) {
+        let h = JSON.parse(localStorage.getItem('orderHistory')) || [];
+        h.unshift({ id: Date.now(), date: new Date().toLocaleString(), dealer: d, items: c });
+        localStorage.setItem('orderHistory', JSON.stringify(h.slice(0, 50)));
+    }
 
-    window.openHistory = () => { const list = document.getElementById('historyList'); const h = JSON.parse(localStorage.getItem('orderHistory')) || []; list.innerHTML = h.length ? h.map(o => `<div class="history-item" style="padding:10px; background:#f9f9f9; border-radius:10px; margin-bottom:5px;"><div><b>${o.dealer}</b><br><small>${o.date}</small></div><button onclick="downloadHist(${o.id})" style="background:#2ecc71; border:none; color:white; padding:5px 10px; border-radius:5px; float:right;">Excel</button></div>`).join('') : "Geçmiş yok."; document.getElementById('historyModal').style.display = 'block'; };
+    window.openHistory = () => {
+        const list = document.getElementById('historyList');
+        const h = JSON.parse(localStorage.getItem('orderHistory')) || [];
+        list.innerHTML = h.length
+            ? h.map(o => `<div style="padding:10px; background:#f9f9f9; border-radius:10px; margin-bottom:5px;"><div><b>${o.dealer}</b><br><small>${o.date}</small></div><button onclick="downloadHist(${o.id})" style="background:#2ecc71; border:none; color:white; padding:5px 10px; border-radius:5px; float:right;">Excel</button></div>`).join('')
+            : "Geçmiş yok.";
+        document.getElementById('historyModal').style.display = 'block';
+    };
 
-    window.downloadHist = (id) => { const o = JSON.parse(localStorage.getItem('orderHistory')).find(o => o.id === id); const ws = XLSX.utils.json_to_sheet(o.items); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Siparis"); XLSX.writeFile(wb, `Gecmis_${o.dealer}.xlsx`); };
+    window.downloadHist = (id) => {
+        const o = JSON.parse(localStorage.getItem('orderHistory')).find(o => o.id === id);
+        const ws = XLSX.utils.json_to_sheet(o.items);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Siparis");
+        XLSX.writeFile(wb, `Gecmis_${o.dealer}.xlsx`);
+    };
 
-    window.openCart = () => { const list = document.getElementById('cartItems'); list.innerHTML = cart.map((i, idx) => `<div style="padding:10px; border-bottom:1px solid #eee;"><b>${i.Product}</b> (${i.qty} Adet) <span onclick="remCart(${idx})" style="color:red; float:right; cursor:pointer;">Sil</span></div>`).join(''); document.getElementById('cartModal').style.display = 'block'; };
+    window.openCart = () => {
+        const list = document.getElementById('cartItems');
+        list.innerHTML = cart.map((i, idx) => `<div style="padding:10px; border-bottom:1px solid #eee;"><b>${i.Product}</b> (${i.qty} Adet) <span onclick="remCart(${idx})" style="color:red; float:right; cursor:pointer;">Sil</span></div>`).join('');
+        document.getElementById('cartModal').style.display = 'block';
+    };
     window.remCart = (i) => { cart.splice(i, 1); openCart(); updateUI(); };
-    window.closeCart = () => document.getElementById('cartModal').style.display='none';
+    window.closeCart = () => document.getElementById('cartModal').style.display = 'none';
     window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => t.className = "", 3000); };
 </script>
 </body>
