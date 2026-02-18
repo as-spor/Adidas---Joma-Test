@@ -77,18 +77,50 @@
             flex-wrap: wrap; gap: 8px;
         }
 
-        /* ── SEARCH ── */
+        /* ── SEARCH (RESPONSIVE FIX) ── */
         .search-container {
             background: #fff; padding: 8px; border-radius: var(--radius);
             margin-top: 20px; display: flex; gap: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            flex-wrap: wrap; /* İzin ver: taşarsa alt satıra geçsin */
         }
         .search-field {
             flex: 1; border: none; padding-left: 15px;
             outline: none; font-size: 16px; font-family: 'Inter';
+            min-width: 200px; /* Çok küçülmesini engelle */
+            height: 50px;
         }
-        .btn-scan   { background: var(--primary); color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
-        .btn-camera { background: var(--accent);  color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 20px; }
+        /* Buton stilleri */
+        .btn-scan, .btn-camera, .btn-ocr {
+            color: #fff; border: none; 
+            width: 55px; height: 50px; 
+            border-radius: 14px; cursor: pointer; 
+            font-size: 18px; flex-shrink: 0;
+        }
+        .btn-scan   { background: var(--primary); }
+        .btn-camera { background: var(--accent); font-size: 20px; }
+        .btn-ocr    { background: #7c3aed; font-size: 16px; }
+
+        /* MOBİL İÇİN ÖZEL DÜZENLEME (Max-width 480px) */
+        @media (max-width: 480px) {
+            .search-container {
+                gap: 8px;
+            }
+            .search-field {
+                /* Mobilde arama çubuğu en üstte tek başına dursun */
+                order: 1;
+                width: 100%;
+                flex-basis: 100%;
+                border-bottom: 1px solid #eee;
+                margin-bottom: 5px;
+            }
+            /* Butonlar alt satırda yan yana eşit paylaşılsın */
+            .btn-scan, .btn-camera, .btn-ocr {
+                order: 2;
+                flex: 1; /* Kalan boşluğu eşit paylaş */
+                width: auto; /* Sabit genişliği iptal et */
+            }
+        }
 
         /* ── SCANNER ── */
         #reader-container {
@@ -215,7 +247,6 @@
             border-bottom: 1px solid #f5f5f5;
             display: flex; gap: 12px; align-items: center;
         }
-        /* BUG 13 FIX: cart-thumb only shown when src is non-empty */
         .cart-thumb {
             width: 70px; height: 70px; border-radius: 10px;
             object-fit: contain; border: 1px solid #eee;
@@ -297,17 +328,42 @@
         }
         #toast.show { visibility: visible; }
 
-        /* ── OCR MODAL ── */
+        /* ── OCR MODAL REFINED ── */
         #ocrModal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #000; z-index: 13000;
             flex-direction: column; align-items: center; justify-content: center;
         }
         #ocrModal.open { display: flex; }
-        #ocrVideo {
+        
+        /* Video Container for overlay */
+        #ocrVideoContainer {
+            position: relative;
             width: 100%; max-width: 600px; max-height: 60vh;
-            object-fit: cover; border-radius: 16px;
+            border-radius: 16px; overflow: hidden;
         }
+        #ocrVideo {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        
+        /* NEW: Focus Box Overlay (Visual Guide) */
+        .ocr-focus-box {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%; height: 70px;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); /* Dim surroundings */
+            border-radius: 8px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .ocr-focus-label {
+            position: absolute; top: -25px; left: 0; width: 100%;
+            text-align: center; color: var(--accent); font-weight: 800; font-size: 12px;
+            text-shadow: 0 1px 2px #000;
+        }
+
         #ocrCanvas { display: none; }
         .ocr-header {
             color: #fff; font-weight: 800; font-size: 16px;
@@ -320,10 +376,12 @@
         .ocr-btn-row {
             display: flex; gap: 12px; padding: 16px 20px 30px;
             width: 100%; max-width: 600px;
+            flex-wrap: wrap; /* Ensure buttons wrap if needed on tiny screens */
         }
         .ocr-snap-btn {
             flex: 2; background: var(--accent); color: #fff; border: none;
             padding: 18px; border-radius: 16px; font-weight: 800; font-size: 16px; cursor: pointer;
+            min-width: 140px;
         }
         .ocr-close-btn {
             flex: 1; background: rgba(255,255,255,0.12); color: #fff; border: none;
@@ -369,20 +427,12 @@
             background: none; border: none; color: #888;
             font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
         }
-
-        /* ── OCR CAMERA BUTTON ── */
-        .btn-ocr {
-            background: #7c3aed; color: #fff; border: none;
-            width: 55px; height: 50px; border-radius: 14px;
-            cursor: pointer; font-size: 16px;
-        }
     </style>
 </head>
 <body>
 
 <div id="debugStatus">⏳ Veriler Yükleniyor...</div>
 
-<!-- LOGIN -->
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin:0;font-weight:800;">AS SPOR</h2>
@@ -396,7 +446,6 @@
     </div>
 </div>
 
-<!-- HEADER -->
 <div class="header-hero">
     <div class="main-container">
         <h1 style="margin:0;">AS SPOR</h1>
@@ -423,7 +472,6 @@
            style="margin-top:15px;background:#fff;" placeholder="Bayi Adı (Zorunlu)"
            oninput="persistDealer()" autocomplete="off">
 
-    <!-- Cross-device cart import banner -->
     <div id="importBanner">
         <div class="import-banner-text" id="importBannerText">📦 Başka cihazdan sepet bulundu</div>
         <button class="import-banner-btn" onclick="importSharedCart()">Yükle</button>
@@ -432,13 +480,12 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" class="search-field"
-               placeholder="Ürün Kodu, İsim veya Barkod Ara..." autocomplete="off">
+               placeholder="Ürün Kodu, İsim veya Barkod..." autocomplete="off">
         <button class="btn-scan"   onclick="searchProduct()" title="Ara"><i class="fas fa-search"></i></button>
         <button class="btn-camera" onclick="toggleCamera()"  title="Barkod Tara"><i class="fas fa-barcode"></i></button>
         <button class="btn-ocr"    onclick="openOcrModal()"  title="Fotoğraftan Oku"><i class="fas fa-camera-retro"></i></button>
     </div>
 
-    <!-- SCANNER -->
     <div id="reader-container">
         <div id="reader-viewport">
             <div id="reader"></div>
@@ -453,7 +500,6 @@
     <div id="resultsArea"></div>
 </div>
 
-<!-- CART SUMMARY BAR -->
 <div id="cartSummaryBar" onclick="openCart()">
     <div>
         <span id="st-qty" style="font-weight:800;font-size:18px;">0</span>
@@ -465,7 +511,6 @@
     </div>
 </div>
 
-<!-- CART MODAL -->
 <div id="cartModal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal('cartModal')"
@@ -493,7 +538,6 @@
                     <i class="fas fa-paper-plane"></i> MAİL AT
                 </button>
             </div>
-            <!-- BUG 15 FIX: custom confirm dialog instead of browser confirm() -->
             <button onclick="askClearCart()"
                 style="width:100%;background:#fff;color:#e74c3c;border:2px solid #e74c3c;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;margin-top:10px;">
                 SEPETİ TEMİZLE
@@ -502,7 +546,6 @@
     </div>
 </div>
 
-<!-- HISTORY MODAL -->
 <div id="historyModal" class="modal">
     <div class="modal-content">
         <span onclick="closeModal('historyModal')"
@@ -512,7 +555,6 @@
     </div>
 </div>
 
-<!-- PRODUCT DETAIL MODAL (bottom sheet) -->
 <div id="productModal">
     <div id="productModalBox">
         <button class="pm-close-btn" onclick="_closeProductModal()">&times;</button>
@@ -532,7 +574,6 @@
     </div>
 </div>
 
-<!-- BUG 15 FIX: custom confirm dialog (browser confirm() blocked in many WebViews) -->
 <div id="confirmDialog">
     <div class="confirm-box">
         <p id="confirmMsg">Emin misiniz?</p>
@@ -543,11 +584,17 @@
     </div>
 </div>
 
-<!-- OCR PHOTO SCANNER MODAL -->
 <div id="ocrModal">
-    <div class="ocr-header">📷 Ürün Kodunu Fotoğrafla Oku</div>
-    <div class="ocr-hint">Kamerayı ürün koduna veya barkoda tutun, ardından "Fotoğraf Çek" butonuna basın.</div>
-    <video id="ocrVideo" autoplay playsinline muted></video>
+    <div class="ocr-header">📷 Ürün Kodunu Tara</div>
+    <div class="ocr-hint">Ürün kodunu aşağıdaki kutunun içine getirin ve "Fotoğraf Çek" butonuna basın.</div>
+    
+    <div id="ocrVideoContainer">
+        <video id="ocrVideo" autoplay playsinline muted></video>
+        <div class="ocr-focus-box">
+            <div class="ocr-focus-label">KODU BURAYA GETİRİN</div>
+        </div>
+    </div>
+
     <canvas id="ocrCanvas"></canvas>
     <div id="ocrStatus"></div>
     <div class="ocr-result-box" id="ocrResultBox">
@@ -587,21 +634,18 @@ const USERS = {
 };
 
 // ═══════════════════════════════════════
-// 2. STATE — all declared ONCE
+// 2. STATE
 // ═══════════════════════════════════════
 let inventory      = [];
-let cart           = [];        // slim objects only — see cartItem()
+let cart           = [];
 let currentU       = null;
 let html5QrCode    = null;
 let cameraRunning  = false;
 let modalCode      = null;
 let groupedResults = {};
-// BUG 12 FIX: flag to block re-entrant camera starts
 let cameraLocked   = false;
-// OCR state
 let ocrStream      = null;
 let ocrText        = '';
-// Shared cart import state
 let pendingImport  = null;
 
 const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
@@ -612,24 +656,19 @@ const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-pr
 window.addEventListener('load', function () {
     emailjs.init(EMAILJS_KEY);
 
-    // Enter key: login fields
     document.getElementById('loginUser').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('loginPass').focus();
     });
     document.getElementById('loginPass').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') checkLogin();
     });
-    // Enter key: search
     document.getElementById('searchInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') searchProduct();
     });
-
-    // Backdrop click closes product modal
     document.getElementById('productModal').addEventListener('click', function (e) {
         if (e.target === this) _closeProductModal();
     });
 
-    // Session restore — only if token matches
     var savedUser  = localStorage.getItem('as_active_user');
     var savedToken = localStorage.getItem('as_token');
     if (savedUser && USERS[savedUser] &&
@@ -641,8 +680,6 @@ window.addEventListener('load', function () {
     }
 
     loadInventory();
-
-    // Check URL for a shared cart payload
     _checkSharedCartUrl();
 });
 
@@ -663,7 +700,7 @@ function loadInventory() {
             bar.innerText = '✅ ' + inventory.length.toLocaleString('tr-TR') + ' ürün yüklendi';
             setTimeout(function () {
                 bar.style.display = 'none';
-                document.body.style.paddingTop = '0';   // remove reserved space once bar is gone
+                document.body.style.paddingTop = '0';
             }, 3000);
         },
         error: function (err) {
@@ -704,21 +741,17 @@ function loginSuccess(u) {
     document.getElementById('displayUserName').innerText = USERS[u].name;
     document.getElementById('loginOverlay').style.display = 'none';
 
-    // Restore cart (slim objects)
     try {
         var raw = localStorage.getItem('as_cart_' + u);
         cart = raw ? JSON.parse(raw) : [];
     } catch (e) { cart = []; }
 
-    // Restore dealer name
     document.getElementById('dealerName').value =
         localStorage.getItem('as_dealer_' + u) || '';
 
-    // BUG 2 FIX: always reset order confirm state on login
     document.getElementById('btnConfirmOrder').style.display = 'block';
     document.getElementById('postConfirmActions').style.display = 'none';
 
-    // Show import banner if a shared cart was in the URL and we just logged in
     if (pendingImport && pendingImport.length > 0) {
         _showImportBanner(pendingImport);
     }
@@ -742,14 +775,11 @@ function persistDealer() {
 // ═══════════════════════════════════════
 // 5b. CROSS-DEVICE CART SHARING
 // ═══════════════════════════════════════
-// Encodes the current cart as a compact base64 URL param so it can be
-// opened on any device — no server needed.
 function shareCart() {
     if (cart.length === 0) return showToast("Sepet boş — önce ürün ekleyin.");
     try {
         var payload = btoa(encodeURIComponent(JSON.stringify(cart)));
         var url = location.origin + location.pathname + '?sepet=' + payload;
-        // Try clipboard first, fall back to prompt
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url).then(function () {
                 showToast("✅ Sepet linki kopyalandı! Telefonunda aç.");
@@ -764,7 +794,6 @@ function shareCart() {
 }
 
 function _fallbackCopyUrl(url) {
-    // Show in a prompt so user can manually copy/send
     var inp = document.createElement('textarea');
     inp.value = url;
     inp.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;width:80%;padding:12px;border-radius:8px;border:2px solid #00AEEF;font-size:13px;';
@@ -783,9 +812,7 @@ function _checkSharedCartUrl() {
         var parsed = JSON.parse(decodeURIComponent(atob(raw)));
         if (!Array.isArray(parsed) || parsed.length === 0) return;
         pendingImport = parsed;
-        // Clean the URL so refreshing doesn't re-import
         history.replaceState(null, '', location.pathname);
-        // Show banner — may appear before or after login
         _showImportBanner(parsed);
     } catch (e) {
         console.warn('Shared cart URL parse error:', e);
@@ -802,7 +829,6 @@ function _showImportBanner(items) {
 
 function importSharedCart() {
     if (!pendingImport) return;
-    // MERGE — never overwrite. Add pending items on top of any existing cart.
     pendingImport.forEach(function (incoming) {
         var exist = cart.find(function (c) { return cartKey(c) === cartKey(incoming); });
         if (exist) {
@@ -842,7 +868,6 @@ function escHtml(s) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Slim cart item — only essential fields, no entire CSV row bloat
 function cartItem(csvRow, dealer) {
     return {
         product:  csvRow['Product']        || csvRow['Reference'] || '',
@@ -854,11 +879,10 @@ function cartItem(csvRow, dealer) {
         price:    parseFloat(csvRow['Tariff Price']) || 0,
         currency: csvRow['Currency']       || 'TL',
         dealer:   dealer,
-        qty:      0    // caller must set this after creation
+        qty:      0
     };
 }
 
-// BUG 10 FIX: guard against undefined product/size in key
 function cartKey(item) {
     return (item.product || '') + '||' + (item.size || '');
 }
@@ -908,7 +932,6 @@ function renderResults() {
         card.style.animationDelay = (i * 0.04) + 's';
         card.onclick = function () { openProductModal(code); };
 
-        // BUG 16 (img): onerror hides the img cleanly, no raw JS in attribute
         var imgHtml = f['ImageURL']
             ? '<img src="' + escHtml(f['ImageURL']) + '" class="product-img" onerror="this.style.display=\'none\'" alt="">'
             : '<div class="product-no-img"><i class="fas fa-tshirt"></i></div>';
@@ -934,17 +957,15 @@ function openProductModal(code) {
     if (!g || !g.length) return;
     var f = g[0];
 
-    // BUG 7 FIX: clear sizes FIRST, then set modalCode — no stale DOM collision
     document.getElementById('pm-sizes').innerHTML = '';
     modalCode = code;
 
-    // Image
     var imgEl = document.getElementById('productModalImg');
     if (f['ImageURL']) {
         imgEl.src = f['ImageURL'];
         imgEl.style.display = 'block';
     } else {
-        imgEl.removeAttribute('src');   // avoid spurious network request to current page
+        imgEl.removeAttribute('src');
         imgEl.style.display = 'none';
     }
 
@@ -955,10 +976,8 @@ function openProductModal(code) {
     document.getElementById('pm-price').innerText =
         (f['Tariff Price'] || '-') + ' ' + (f['Currency'] || '');
 
-    // Build size rows — all reset to 0
     document.getElementById('pm-sizes').innerHTML = g.map(function (item, idx) {
         var stock = parseInt(item['Stock Quantity'], 10) || 0;
-        // Show how many are already in cart for this size
         var inCart = 0;
         cart.forEach(function (c) {
             if (c.product === (item['Product'] || item['Reference']) &&
@@ -983,12 +1002,11 @@ function openProductModal(code) {
     document.body.style.overflow = 'hidden';
 }
 
-// BUG 9 FIX: clamp NaN from manual text input before arithmetic
 function pmQty(idx, delta, max) {
     var el = document.getElementById('pm-qty-' + idx);
     if (!el) return;
     var current = parseInt(el.value, 10);
-    if (isNaN(current)) current = 0;   // guard NaN
+    if (isNaN(current)) current = 0;
     var v = current + delta;
     v = Math.max(0, max !== undefined ? Math.min(v, max) : v);
     el.value = v;
@@ -996,16 +1014,14 @@ function pmQty(idx, delta, max) {
     if (row) row.className = 'size-btn-row' + (v > 0 ? ' has-qty' : '');
 }
 
-// BUG 14 FIX: productModal only ever closed via its own function, never via closeModal()
 function _closeProductModal() {
     document.getElementById('productModal').classList.remove('open');
     document.body.style.overflow = '';
     modalCode = null;
 }
 
-// BUG 8 FIX: snapshot modalCode at call time so late async events can't corrupt it
 function addToCartFromModal() {
-    var codeSnapshot = modalCode;   // capture before any async gap
+    var codeSnapshot = modalCode;
     if (!codeSnapshot) return;
     var d = document.getElementById('dealerName').value.trim();
     if (!d) return showToast("⚠️ Önce Bayi Adı Girin!");
@@ -1017,9 +1033,8 @@ function addToCartFromModal() {
     g.forEach(function (item, idx) {
         var el = document.getElementById('pm-qty-' + idx);
         var q = parseInt(el ? el.value : '0', 10);
-        if (isNaN(q) || q <= 0) return;   // BUG 9 secondary guard
+        if (isNaN(q) || q <= 0) return;
 
-        // Merge into existing cart entry if same product + size
         var key = (item['Product'] || item['Reference'] || '') + '||' + (item['EUR Size'] || '');
         var exist = cart.find(function (x) { return cartKey(x) === key; });
         if (exist) {
@@ -1035,7 +1050,6 @@ function addToCartFromModal() {
     if (added > 0) {
         persistCart();
         updateCartUI();
-        // Reset confirm state when cart changes
         document.getElementById('btnConfirmOrder').style.display = 'block';
         document.getElementById('postConfirmActions').style.display = 'none';
         showToast('✅ ' + added + ' adet eklendi.');
@@ -1050,7 +1064,6 @@ function addToCartFromModal() {
 // ═══════════════════════════════════════
 function updateCartUI() {
     var count    = cart.reduce(function (a, b) { return a + b.qty; }, 0);
-    // BUG 5 FIX: guard NaN prices so total never shows "NaN"
     var total    = cart.reduce(function (a, b) {
         var p = isNaN(b.price) ? 0 : b.price;
         return a + p * b.qty;
@@ -1068,12 +1081,10 @@ function updateCartUI() {
     if (count > 0) bar.classList.add('active');
     else           bar.classList.remove('active');
 
-    // Show/hide share-cart button
     var shareBtn = document.getElementById('shareCartBtn');
     if (count > 0) shareBtn.classList.add('visible');
     else           shareBtn.classList.remove('visible');
 
-    // Re-render cart modal in-place if it's open
     if (document.getElementById('cartModal').style.display === 'block') {
         _renderCartItems();
     }
@@ -1091,7 +1102,6 @@ function _renderCartItems() {
         return;
     }
 
-    // Group by product code
     var groupOrder = [];
     var groups = {};
     cart.forEach(function (item) {
@@ -1101,7 +1111,6 @@ function _renderCartItems() {
             groupOrder.push(code);
         }
         groups[code].items.push(item);
-        // BUG 5 secondary: guard NaN in subtotal
         groups[code].subTotal += (isNaN(item.price) ? 0 : item.price) * item.qty;
         groups[code].subQty   += item.qty;
     });
@@ -1110,7 +1119,6 @@ function _renderCartItems() {
         var g = groups[code];
         var cur = g.currency || 'TL';
 
-        // BUG 13 FIX: only render img tag if imageURL is non-empty
         var thumbHtml = g.img
             ? '<img src="' + escHtml(g.img) + '" class="cart-thumb" onerror="this.style.display=\'none\'" alt="">'
             : '<div class="cart-thumb" style="background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:24px;"><i class="fas fa-tshirt"></i></div>';
@@ -1147,7 +1155,6 @@ function _renderCartItems() {
     }).join('');
 }
 
-// BUG 6 + BUG 10 FIX: stable key lookup, never array index; no scroll-jump on remove
 function cartChangeQty(encodedKey, delta) {
     var key  = decodeURIComponent(encodedKey);
     var item = cart.find(function (c) { return cartKey(c) === key; });
@@ -1169,7 +1176,6 @@ function confirmAndLockOrder() {
     showToast("✓ Sipariş Onaylandı.");
 }
 
-// BUG 15 FIX: use custom confirm dialog
 function askClearCart() {
     document.getElementById('confirmMsg').innerText =
         'Tüm sepeti temizleyip yeni satışa başlamak istiyor musunuz?';
@@ -1178,7 +1184,6 @@ function askClearCart() {
         persistCart();
         updateCartUI();
         closeModal('cartModal');
-        // Reset confirm state
         document.getElementById('btnConfirmOrder').style.display = 'block';
         document.getElementById('postConfirmActions').style.display = 'none';
         closeConfirm();
@@ -1189,7 +1194,6 @@ function closeConfirm() {
     document.getElementById('confirmDialog').classList.remove('open');
 }
 
-// BUG 14 FIX: closeModal only handles .modal elements, never #productModal
 function closeModal(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -1202,7 +1206,6 @@ function saveAndExport() {
     if (cart.length === 0) return showToast("Sepet boş!");
     var dealer = document.getElementById('dealerName').value.trim() || 'siparis';
 
-    // BUG 4 FIX: deep-copy cart before saving to history
     var snapshot = JSON.parse(JSON.stringify(cart));
     saveToHistory(snapshot, dealer);
 
@@ -1253,7 +1256,6 @@ function sendMail() {
 
     var extra = document.getElementById('customerEmail').value.trim();
 
-    // BUG 11 FIX: avoid .finally() — use .then()/.catch() for WebView compat
     emailjs.send(EMAILJS_SVC, EMAILJS_TMP, {
         manager:        USERS[currentU].name,
         dealer:         dealer,
@@ -1262,7 +1264,6 @@ function sendMail() {
         customer_email: FIXED_EMAILS + (extra ? ', ' + extra : '')
     })
     .then(function () {
-        // BUG 4 FIX: deep-copy cart snapshot for history
         saveToHistory(JSON.parse(JSON.stringify(cart)), dealer);
         showToast("✅ Sipariş Maili Gönderildi!");
         btn.disabled = false;
@@ -1286,7 +1287,7 @@ function saveToHistory(itemsSnapshot, dealer) {
             id:     Date.now(),
             date:   new Date().toLocaleString('tr-TR'),
             dealer: dealer,
-            items:  itemsSnapshot   // BUG 4 FIX: always a deep copy
+            items:  itemsSnapshot
         });
         localStorage.setItem('as_history', JSON.stringify(h.slice(0, 50)));
     } catch (e) { console.warn('History save failed:', e); }
@@ -1343,7 +1344,7 @@ function downloadHistItem(id) {
 }
 
 // ═══════════════════════════════════════
-// 13b. OCR PHOTO SCANNER
+// 13b. OCR PHOTO SCANNER (OPTIMIZED: Center Crop)
 // ═══════════════════════════════════════
 function openOcrModal() {
     var modal = document.getElementById('ocrModal');
@@ -1384,49 +1385,60 @@ function ocrSnap() {
     var status = document.getElementById('ocrStatus');
     var btn    = document.getElementById('ocrSnapBtn');
 
-    // Capture current video frame
-    canvas.width  = video.videoWidth  || 1280;
-    canvas.height = video.videoHeight || 720;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    // FIX: Only capture the center strip (Focus Box area)
+    var w = video.videoWidth;
+    var h = video.videoHeight;
+    // We want a strip in the middle. Let's say ~15-20% height of the video.
+    // Ensure it matches visual aspect ratio roughly.
+    var cropHeight = Math.min(150, Math.floor(h * 0.25)); 
+    var sy = (h - cropHeight) / 2;
+
+    canvas.width  = w;
+    canvas.height = cropHeight;
+    var ctx = canvas.getContext('2d');
+    
+    // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+    ctx.drawImage(video, 0, sy, w, cropHeight, 0, 0, w, cropHeight);
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Okunuyor...';
-    status.innerText = '🔍 Metin taranıyor, lütfen bekleyin...';
+    status.innerText = '🔍 İşleniyor...';
     document.getElementById('ocrResultBox').style.display = 'none';
 
-    // Run Tesseract OCR — digit+letter mode works well for product codes
     Tesseract.recognize(canvas, 'eng', {
         logger: function (m) {
             if (m.status === 'recognizing text') {
-                status.innerText = '🔍 ' + Math.round((m.progress || 0) * 100) + '% tarandı...';
+                status.innerText = '🔍 %' + Math.round((m.progress || 0) * 100);
             }
         }
     }).then(function (result) {
         var raw = result.data.text || '';
-        // Extract the longest "word" that looks like a product/barcode
-        // Priority: long numeric string (EAN), then alphanumeric product code
-        var nums   = raw.match(/\d{8,13}/g)  || [];
-        var alphas = raw.match(/[A-Z0-9]{4,}/g) || [];
-        var best   = nums[0] || alphas[0] || raw.replace(/\s+/g, ' ').trim().slice(0, 40);
+        // Look for typical product codes (Alpha-numeric, uppercase)
+        // Clean garbage characters
+        var clean = raw.replace(/[^A-Z0-9\s-]/g, ''); 
+        
+        // Strategy: find the longest continuous string of chars
+        var parts = clean.split(/\s+/).filter(s => s.length > 3);
+        var best = parts.length > 0 ? parts[0] : clean.trim();
 
-        if (!best) {
-            status.innerText = '⚠️ Metin okunamadı. Tekrar deneyin.';
+        if (!best || best.length < 3) {
+            status.innerText = '⚠️ Okunamadı.';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
+            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
             return;
         }
 
         ocrText = best;
         status.innerText = '';
-        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" için ara';
+        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" ara';
         document.getElementById('ocrResultBox').style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar Dene';
+        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar';
     }).catch(function (err) {
         console.error('OCR error:', err);
-        status.innerText = '❌ OCR hatası. Tekrar deneyin.';
+        status.innerText = '❌ Hata.';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
+        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
     });
 }
 
@@ -1441,7 +1453,6 @@ function useOcrResult() {
 // 14. CAMERA (Barcode)
 // ═══════════════════════════════════════
 window.toggleCamera = async function () {
-    // BUG 12 FIX: prevent re-entrant starts via lock flag
     if (cameraLocked) return;
 
     var container = document.getElementById('reader-container');
@@ -1476,7 +1487,6 @@ window.toggleCamera = async function () {
             { facingMode: "environment" },
             config,
             function (decodedText) {
-                // BUG 12 FIX: synchronous stop inside callback — no async to race with
                 beep.play().catch(function () {});
                 document.getElementById('searchInput').value = decodedText;
                 searchProduct();
@@ -1491,15 +1501,14 @@ window.toggleCamera = async function () {
                         cameraLocked  = false;
                         container.style.display = 'none';
                     }).catch(function (e) {
-                        console.warn('Camera stop error in scan callback:', e);
                         html5QrCode   = null;
                         cameraRunning = false;
-                        cameraLocked  = false;   // always unlock so button works again
+                        cameraLocked  = false;
                         container.style.display = 'none';
                     });
                 }
             },
-            function () {}  // frame error — ignore
+            function () {} 
         );
         cameraRunning = true;
     } catch (err) {
