@@ -1344,42 +1344,63 @@ function downloadHistItem(id) {
 }
 
 // ═══════════════════════════════════════
-// 13b. OCR PHOTO SCANNER (GELİŞMİŞ VERSİYON)
+// 13b. OCR PHOTO SCANNER (PERFORMANS OPTİMİZASYONLU)
 // ═══════════════════════════════════════
 
-// Yardımcı Fonksiyon: Görüntüyü Siyah-Beyaz Yap (Thresholding)
-// Bu işlem, OCR'ın harfleri arka plandan ayırt etmesini sağlar.
+let ocrWorker = null; // İşçiyi hafızada tutacağımız değişken
+
+// 1. İşçiyi Hazırla (Sayfa yüklenince veya ilk açılışta çalışır)
+async function initOcrWorker() {
+    if (ocrWorker) return; // Zaten varsa tekrar kurma
+    
+    // İşçiyi yarat
+    ocrWorker = await Tesseract.createWorker('eng');
+    
+    // Sadece gerekli karakterleri tanıması için ayar yap (Whitelist)
+    // Bu işlem hızı 2 kat artırır
+    await ocrWorker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+    });
+}
+
+// Görüntü İşleme (Siyah-Beyaz ve Kontrast)
 function preprocessImage(canvas) {
     var ctx = canvas.getContext('2d');
     var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     var d = imageData.data;
-    // Basit bir eşikleme (threshold) algoritması
+    // Luma formülü ile siyah-beyaz yap
     for (var i = 0; i < d.length; i += 4) {
-        var r = d[i];
-        var g = d[i+1];
-        var b = d[i+2];
-        // Parlaklık hesapla (Luma)
-        var v = (0.2126*r + 0.7152*g + 0.0722*b >= 100) ? 255 : 0; // Eşik değeri 100
+        var v = (0.2126*r + 0.7152*g + 0.0722*b >= 100) ? 255 : 0;
         d[i] = d[i+1] = d[i+2] = v;
     }
     ctx.putImageData(imageData, 0, 0);
 }
 
-function openOcrModal() {
+async function openOcrModal() {
     var modal = document.getElementById('ocrModal');
     var video = document.getElementById('ocrVideo');
-    document.getElementById('ocrStatus').innerText = '';
+    var status = document.getElementById('ocrStatus');
+    
     document.getElementById('ocrResultBox').style.display = 'none';
     document.getElementById('ocrSnapBtn').disabled = false;
-    document.getElementById('ocrSnapBtn').innerHTML = '<i class="fas fa-camera"></i> Fotoğraf Çek';
     ocrText = '';
 
-    // Arka kamerayı (environment) en yüksek çözünürlükte açmaya çalış
+    // Modal açılırken arka planda OCR motorunu ısıtıyoruz
+    if (!ocrWorker) {
+        status.innerText = '⚙️ OCR Motoru Hazırlanıyor...';
+        initOcrWorker().then(() => {
+            status.innerText = '';
+        }).catch(err => {
+            console.error(err);
+            status.innerText = '⚠️ Motor hatası.';
+        });
+    }
+
     navigator.mediaDevices.getUserMedia({
         video: { 
             facingMode: { ideal: 'environment' }, 
-            width: { ideal: 1920 }, // Daha yüksek çözünürlük talep et
-            height: { ideal: 1080 } 
+            width: { ideal: 1280 }, // 1080p yerine 720p yeterli, telefonu yormaz
+            height: { ideal: 720 } 
         }
     }).then(function (stream) {
         ocrStream = stream;
@@ -1387,13 +1408,15 @@ function openOcrModal() {
         modal.classList.add('open');
     }).catch(function (err) {
         showToast("Kamera izni gerekli.");
-        console.error('OCR camera error:', err);
     });
 }
 
 function closeOcrModal() {
     var modal = document.getElementById('ocrModal');
     var video = document.getElementById('ocrVideo');
+    
+    // Kamerayı kapat ama ocrWorker'ı ÖLDÜRME. 
+    // Böylece bir dahaki sefere ışık hızında açılır.
     if (ocrStream) {
         ocrStream.getTracks().forEach(function (t) { t.stop(); });
         ocrStream = null;
@@ -1403,79 +1426,68 @@ function closeOcrModal() {
     ocrText = '';
 }
 
-function ocrSnap() {
+async function ocrSnap() {
     var video  = document.getElementById('ocrVideo');
     var canvas = document.getElementById('ocrCanvas');
     var status = document.getElementById('ocrStatus');
     var btn    = document.getElementById('ocrSnapBtn');
 
-    // Video boyutlarını al
+    if (!ocrWorker) {
+        await initOcrWorker();
+    }
+
     var w = video.videoWidth;
     var h = video.videoHeight;
-    
-    // Sadece ortadaki kırmızı kutunun olduğu alanı kes (Focus Box)
-    // Kutunun yüksekliği yaklaşık ekranın %20-25'i kadar
     var cropHeight = Math.min(200, Math.floor(h * 0.20)); 
     var sy = (h - cropHeight) / 2;
 
-    // Canvas boyutunu ayarla
     canvas.width  = w;
     canvas.height = cropHeight;
     var ctx = canvas.getContext('2d');
     
-    // 1. Resmi kesip canvas'a çiz
     ctx.drawImage(video, 0, sy, w, cropHeight, 0, 0, w, cropHeight);
-
-    // 2. Görüntü İşleme (Siyah-Beyaz yap)
-    preprocessImage(canvas);
+    
+    // Görüntü işlemeyi kapattım (opsiyonel), eğer çok kasarsa burayı yorum satırı yapma
+    // preprocessImage(canvas); 
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> İşleniyor...';
-    status.innerText = '🔍 Görüntü işleniyor...';
-    document.getElementById('ocrResultBox').style.display = 'none';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Okunuyor...';
+    status.innerText = '🔍 Analiz ediliyor...';
 
-    // 3. Tesseract Çalıştır (Whitelist Eklendi)
-    Tesseract.recognize(canvas, 'eng', {
-        logger: function (m) {
-            if (m.status === 'recognizing text') {
-                status.innerText = '🔍 %' + Math.round((m.progress || 0) * 100);
-            }
-        }
-    }).then(function (result) {
-        var raw = result.data.text || '';
+    try {
+        // ARTIK Tesseract.recognize YOK. 
+        // Hazır işçiyi kullanıyoruz:
+        const { data: { text } } = await ocrWorker.recognize(canvas);
         
-        // Sadece BÜYÜK HARF ve RAKAMLARI filtrele
-        // Noktalama işaretlerini ve küçük harfleri çöpe at
-        var clean = raw.replace(/[^A-Z0-9\s-]/g, ''); 
-        
-        // En az 3 karakterli kelimeleri/kodları bul
+        var clean = text.replace(/[^A-Z0-9\s-]/g, ''); 
         var parts = clean.split(/\s+/).filter(s => s.length >= 3);
-        
-        // En uzun parçayı "kod" olarak kabul et (Genelde ürün kodları uzundur)
-        // Eğer EAN (sadece sayı) varsa öncelik ver
         var best = parts.find(p => /^\d{8,13}$/.test(p)) || 
                    parts.sort((a, b) => b.length - a.length)[0] || 
                    clean.trim();
 
         if (!best || best.length < 3) {
-            status.innerText = '⚠️ Kod algılanamadı. Işık yeterli mi?';
+            status.innerText = '⚠️ Okunamadı.';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
+            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
             return;
         }
 
         ocrText = best;
         status.innerText = '';
-        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" ile Ara';
+        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" ara';
         document.getElementById('ocrResultBox').style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar Dene';
-    }).catch(function (err) {
-        console.error('OCR error:', err);
-        status.innerText = '❌ Hata oluştu.';
+        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar';
+
+    } catch (err) {
+        console.error(err);
+        status.innerText = '❌ Hata.';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
-    });
+        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
+        
+        // Eğer işçi çöktüyse sıfırla ki bir dahaki sefere yeniden kurulsun
+        ocrWorker = null;
+    }
 }
 
 function useOcrResult() {
