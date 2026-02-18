@@ -1498,48 +1498,75 @@ function useOcrResult() {
 }
 
 // ═══════════════════════════════════════
-// 14. CAMERA (Barcode)
+// 14. CAMERA (Barcode - Performans & Fener Destekli)
 // ═══════════════════════════════════════
+
+let isTorchOn = false; // Fener durumu
+
 window.toggleCamera = async function () {
     if (cameraLocked) return;
 
     var container = document.getElementById('reader-container');
 
+    // Kamera zaten açıksa kapat
     if (cameraRunning && html5QrCode) {
         cameraLocked = true;
-        try { await html5QrCode.stop(); html5QrCode.clear(); } catch (e) { console.warn(e); }
+        try { 
+            if (isTorchOn) await toggleTorch(false); // Önce ışığı kapat
+            await html5QrCode.stop(); 
+            html5QrCode.clear(); 
+        } catch (e) { console.warn(e); }
+        
         html5QrCode   = null;
         cameraRunning = false;
         cameraLocked  = false;
+        isTorchOn     = false;
         container.style.display = 'none';
+        
+        // Varsa fener butonunu temizle
+        var torchBtn = document.getElementById('torchToggleBtn');
+        if (torchBtn) torchBtn.remove();
         return;
     }
 
+    // Kamerayı aç
     container.style.display = 'block';
     html5QrCode = new Html5Qrcode("reader");
 
+    // OPTİMİZASYON 1: Kare hızını düşür (Isınmayı engeller), Kutuyu büyüt
     var config = {
-        fps: 20,
-        qrbox: { width: 250, height: 100 },
+        fps: 15, // 20-30 yerine 15 yeterlidir, telefonu yormaz
+        qrbox: { width: 280, height: 150 }, // Tarama alanı biraz daha geniş
+        aspectRatio: 1.0,
         formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.QR_CODE
         ]
     };
 
+    // OPTİMİZASYON 2: Gelişmiş Kamera Ayarları (Odaklama ve Işık)
+    var constraints = { 
+        facingMode: "environment",
+        width: { min: 640, ideal: 1280, max: 1280 }, // 720p'ye sabitle (Hız artırır)
+        height: { min: 480, ideal: 720, max: 720 },
+        focusMode: "continuous",    // Sürekli odaklama
+        advanced: [{ focusMode: "continuous" }] // Bazı tarayıcılar için tekrar
+    };
+
     try {
         await html5QrCode.start(
-            { facingMode: "environment" },
+            constraints,
             config,
             function (decodedText) {
+                // BAŞARILI OKUMA
                 beep.play().catch(function () {});
                 document.getElementById('searchInput').value = decodedText;
                 searchProduct();
                 showToast("📸 " + decodedText);
 
+                // Okur okumaz kamerayı durdur (isteğe bağlı, seri okuma için burayı yorumlayabilirsin)
                 if (cameraRunning && !cameraLocked) {
                     cameraLocked = true;
                     html5QrCode.stop().then(function () {
@@ -1547,7 +1574,10 @@ window.toggleCamera = async function () {
                         html5QrCode   = null;
                         cameraRunning = false;
                         cameraLocked  = false;
+                        isTorchOn     = false;
                         container.style.display = 'none';
+                        var torchBtn = document.getElementById('torchToggleBtn');
+                        if (torchBtn) torchBtn.remove();
                     }).catch(function (e) {
                         html5QrCode   = null;
                         cameraRunning = false;
@@ -1556,11 +1586,36 @@ window.toggleCamera = async function () {
                     });
                 }
             },
-            function () {} 
+            function (errorMessage) {
+                // Okuma hatası (boş geç)
+            }
         );
+        
         cameraRunning = true;
+
+        // OPTİMİZASYON 3: Fener (Flash) Butonu Ekle
+        // Sadece kamera açıldıktan sonra özellikleri kontrol edip butonu ekliyoruz
+        try {
+            const track = html5QrCode.getRunningTrackCameraCapabilities();
+            if (track && typeof track.torch === 'boolean' && track.torch) {
+                // Kamera feneri destekliyor, butonu ekle
+                if (!document.getElementById('torchToggleBtn')) {
+                    var btn = document.createElement('button');
+                    btn.id = 'torchToggleBtn';
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> Işık';
+                    btn.style.cssText = "position:absolute; bottom:20px; right:20px; z-index:999; background:rgba(255,255,255,0.2); border:1px solid #fff; color:#fff; padding:10px 15px; border-radius:20px; font-weight:bold; backdrop-filter:blur(4px);";
+                    btn.onclick = function() { toggleTorch(!isTorchOn); };
+                    
+                    // Butonu reader-viewport içine ekle
+                    document.getElementById('reader-viewport').appendChild(btn);
+                }
+            }
+        } catch (err) {
+            console.warn("Fener özelliği kontrol edilemedi:", err);
+        }
+
     } catch (err) {
-        showToast("Kamera açılamadı — izin verin.");
+        showToast("Kamera hatası: " + err);
         console.error('Camera error:', err);
         html5QrCode   = null;
         cameraRunning = false;
@@ -1568,6 +1623,25 @@ window.toggleCamera = async function () {
         container.style.display = 'none';
     }
 };
+
+// Yardımcı Fener Fonksiyonu
+async function toggleTorch(turnOn) {
+    if (!html5QrCode) return;
+    try {
+        await html5QrCode.applyVideoConstraints({
+            advanced: [{ torch: turnOn }]
+        });
+        isTorchOn = turnOn;
+        var btn = document.getElementById('torchToggleBtn');
+        if (btn) {
+            btn.style.background = turnOn ? "rgba(255,255,0,0.8)" : "rgba(255,255,255,0.2)";
+            btn.style.color = turnOn ? "#000" : "#fff";
+        }
+    } catch (e) {
+        console.error("Fener hatası:", e);
+        showToast("Fener açılamadı.");
+    }
+}
 
 // ═══════════════════════════════════════
 // 15. TOAST
