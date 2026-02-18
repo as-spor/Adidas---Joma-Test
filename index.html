@@ -19,20 +19,27 @@
     <style>
         :root { --primary: #000; --accent: #00AEEF; --bg: #f8f9fb; --radius: 18px; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 160px; color: #1a1a1a; }
 
-        /* ── STATUS ── */
+        /* BUG 1 FIX: padding-top so fixed status bar doesn't cover header */
+        body {
+            font-family: 'Inter', sans-serif; background: var(--bg);
+            margin: 0; padding-top: 44px; padding-bottom: 100px; color: #1a1a1a;
+        }
+
+        /* ── STATUS BAR ── */
         #debugStatus {
-            background: #f39c12; color: #fff; padding: 10px; text-align: center;
-            font-weight: 700; font-size: 14px; position: fixed; top: 0; left: 0;
-            width: 100%; z-index: 9999; transition: background 0.4s;
+            background: #f39c12; color: #fff; padding: 10px;
+            text-align: center; font-weight: 700; font-size: 14px;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
+            transition: background 0.4s;
         }
 
         /* ── LOGIN ── */
         #loginOverlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: var(--primary); z-index: 10000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 20px;
         }
         .login-box {
             background: #fff; width: 100%; max-width: 350px;
@@ -50,15 +57,23 @@
             padding: 15px; border: none; border-radius: 12px;
             font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px;
         }
-        #loginError { color: red; display: none; margin-top: 10px; font-weight: 700; }
+        #loginError {
+            color: #e74c3c; display: none; margin-top: 12px;
+            font-weight: 700; font-size: 14px;
+            background: #fff0f0; padding: 10px; border-radius: 8px;
+        }
 
         /* ── LAYOUT ── */
-        .header-hero { background: var(--primary); color: #fff; padding: 50px 20px 80px; border-bottom: 6px solid var(--accent); }
+        .header-hero {
+            background: var(--primary); color: #fff;
+            padding: 40px 20px 80px; border-bottom: 6px solid var(--accent);
+        }
         .main-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
         .user-welcome-bar {
             background: #fff; padding: 15px 20px; border-radius: var(--radius);
             margin-top: -50px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px;
         }
 
         /* ── SEARCH ── */
@@ -67,12 +82,18 @@
             margin-top: 20px; display: flex; gap: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
-        .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; font-family: 'Inter'; }
+        .search-field {
+            flex: 1; border: none; padding-left: 15px;
+            outline: none; font-size: 16px; font-family: 'Inter';
+        }
         .btn-scan   { background: var(--primary); color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
         .btn-camera { background: var(--accent);  color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 20px; }
 
         /* ── SCANNER ── */
-        #reader-container { width: 100%; margin-top: 15px; display: none; background: #111; border-radius: 22px; overflow: hidden; }
+        #reader-container {
+            width: 100%; margin-top: 15px; display: none;
+            background: #111; border-radius: 22px; overflow: hidden;
+        }
         #reader-viewport { position: relative; width: 100%; height: 220px; background: #000; overflow: hidden; }
         #reader { width: 100% !important; height: 220px !important; }
         #reader video { width: 100% !important; height: 220px !important; object-fit: cover; }
@@ -87,8 +108,8 @@
 
         /* ── PRODUCT CARDS ── */
         #resultsArea { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 25px; }
-        @media(min-width: 600px) { #resultsArea { grid-template-columns: repeat(2, 1fr); } }
-        @media(min-width: 900px) { #resultsArea { grid-template-columns: repeat(3, 1fr); } }
+        @media(min-width: 600px) { #resultsArea { grid-template-columns: repeat(2,1fr); } }
+        @media(min-width: 900px) { #resultsArea { grid-template-columns: repeat(3,1fr); } }
 
         .product-card {
             background: #fff; border-radius: 20px; overflow: hidden;
@@ -97,10 +118,9 @@
             transition: transform 0.15s, box-shadow 0.15s;
             animation: fadeUp 0.3s ease both;
         }
-        .product-card:active { transform: scale(0.98); }
+        .product-card:active { transform: scale(0.97); }
         @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 
-        /* FIX: hidden when broken, not showing broken-image icon */
         .product-img {
             width: 100%; height: 240px; object-fit: contain;
             background: #fff; padding: 15px; border-bottom: 1px solid #f2f2f2;
@@ -115,7 +135,6 @@
         .product-name-label { font-size: 15px; font-weight: 800; color: #000; margin: 4px 0 0; }
 
         /* ── PRODUCT MODAL (bottom sheet) ── */
-        /* FIX: #productModal had ZERO CSS — completely invisible before */
         #productModal {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.75); z-index: 12500;
@@ -129,31 +148,41 @@
         }
         @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:none;opacity:1} }
         .pm-close-btn {
-            position: absolute; top: 14px; right: 16px; font-size: 30px;
+            position: absolute; top: 14px; right: 16px; font-size: 22px;
             cursor: pointer; z-index: 10; background: rgba(0,0,0,0.08);
             border: none; border-radius: 50%; width: 38px; height: 38px;
-            display: flex; align-items: center; justify-content: center; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
         }
-        #productModalImg { width: 100%; height: 320px; object-fit: contain; background: #fff; padding: 15px; border-radius: 28px 28px 0 0; }
+        #productModalImg {
+            width: 100%; height: 300px; object-fit: contain;
+            background: #fff; padding: 15px; border-radius: 28px 28px 0 0;
+            display: block;
+        }
         .pm-body { padding: 20px; }
         .pm-code  { color: var(--accent); font-weight: 800; font-size: 12px; text-transform: uppercase; }
         .pm-name  { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
-        .pm-ean   { font-size: 12px; color: #aaa; }
-        .pm-desc  { font-size: 14px; color: #666; margin: 10px 0; line-height: 1.5; }
+        .pm-ean   { font-size: 12px; color: #aaa; margin-bottom: 4px; }
+        .pm-desc  { font-size: 14px; color: #666; margin: 8px 0 12px; line-height: 1.5; }
         .pm-price { font-size: 28px; font-weight: 900; color: #000; margin-bottom: 20px; }
-        .pm-sizes-title { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-
+        .pm-sizes-title {
+            font-size: 12px; font-weight: 700; color: #888;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+        }
         .size-grid { display: flex; flex-direction: column; gap: 8px; }
         .size-btn-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 14px; background: #f9f9f9; border-radius: 12px; border: 1.5px solid #eee;
+            padding: 12px 14px; background: #f9f9f9;
+            border-radius: 12px; border: 1.5px solid #eee;
+            transition: border-color 0.15s, background 0.15s;
         }
         .size-btn-row.has-qty { border-color: var(--accent); background: #f0faff; }
         .pm-qty-ctrl { display: flex; align-items: center; gap: 8px; }
         .pm-btn-qty {
             width: 34px; height: 34px; border-radius: 10px; border: none;
-            background: #fff; font-weight: 800; font-size: 18px; cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;
+            background: #fff; font-weight: 800; font-size: 20px; cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
         }
         .pm-qty-inp {
             width: 48px; text-align: center; border: 1.5px solid #ddd;
@@ -176,32 +205,94 @@
         #cartSummaryBar.active { display: flex; }
 
         /* ── CART GROUPS ── */
-        .cart-group { border: 1.5px solid #eee; border-radius: 18px; margin-bottom: 16px; overflow: hidden; background: #fff; }
-        .cart-group-header { background: #fcfcfc; padding: 14px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: center; }
-        .cart-thumb { width: 70px; height: 70px; border-radius: 10px; object-fit: contain; border: 1px solid #eee; background: #fff; flex-shrink: 0; }
-        .cart-size-row { display: flex; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f9f9f9; align-items: center; }
-        .cart-qty-ctrl { display: flex; align-items: center; gap: 8px; background: #f0f0f0; border-radius: 10px; padding: 4px 8px; }
-        .cart-btn-qty { width: 30px; height: 30px; border-radius: 8px; border: none; background: #fff; font-weight: 800; font-size: 16px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .cart-qty-display { font-weight: 800; font-size: 16px; min-width: 28px; text-align: center; }
+        .cart-group {
+            border: 1.5px solid #eee; border-radius: 18px;
+            margin-bottom: 16px; overflow: hidden; background: #fff;
+        }
+        .cart-group-header {
+            background: #fcfcfc; padding: 14px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex; gap: 12px; align-items: center;
+        }
+        /* BUG 13 FIX: cart-thumb only shown when src is non-empty */
+        .cart-thumb {
+            width: 70px; height: 70px; border-radius: 10px;
+            object-fit: contain; border: 1px solid #eee;
+            background: #fff; flex-shrink: 0;
+        }
+        .cart-size-row {
+            display: flex; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid #f9f9f9;
+            align-items: center;
+        }
+        .cart-qty-ctrl {
+            display: flex; align-items: center; gap: 8px;
+            background: #f0f0f0; border-radius: 10px; padding: 4px 8px;
+        }
+        .cart-btn-qty {
+            width: 32px; height: 32px; border-radius: 8px; border: none;
+            background: #fff; font-weight: 800; font-size: 18px;
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cart-qty-display {
+            font-weight: 800; font-size: 16px;
+            min-width: 28px; text-align: center;
+        }
+        /* BUG 15 FIX: custom confirm dialog instead of browser confirm() */
+        #confirmDialog {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 20000;
+            align-items: center; justify-content: center;
+        }
+        #confirmDialog.open { display: flex; }
+        .confirm-box {
+            background: #fff; border-radius: 20px; padding: 30px 24px;
+            max-width: 320px; width: 90%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .confirm-box p { font-size: 16px; font-weight: 600; margin: 0 0 20px; line-height: 1.4; }
+        .confirm-actions { display: flex; gap: 10px; }
+        .confirm-btn {
+            flex: 1; padding: 14px; border-radius: 12px; border: none;
+            font-weight: 800; font-size: 14px; cursor: pointer;
+        }
+        .confirm-btn.cancel { background: #eee; color: #333; }
+        .confirm-btn.danger { background: #e74c3c; color: #fff; }
 
         /* ── MODALS ── */
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 12000; }
-        .modal-content { background: #fff; margin: 3% auto; width: 95%; max-width: 560px; padding: 25px; border-radius: 24px; max-height: 90vh; overflow-y: auto; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); z-index: 12000;
+        }
+        .modal-content {
+            background: #fff; margin: 3% auto; width: 95%; max-width: 560px;
+            padding: 25px; border-radius: 24px; max-height: 90vh; overflow-y: auto;
+        }
 
         /* ── HISTORY ── */
-        .hist-item { padding: 14px; background: #f9f9f9; border-radius: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .hist-item-info { font-size: 13px; }
+        .hist-item {
+            padding: 14px; background: #f9f9f9; border-radius: 14px;
+            margin-bottom: 10px; display: flex;
+            justify-content: space-between; align-items: center; gap: 10px;
+        }
+        .hist-item-info { font-size: 13px; flex: 1; min-width: 0; }
         .hist-item-info b { display: block; margin-bottom: 2px; }
         .hist-item-info small { color: #aaa; }
-        .btn-hist-excel { background: #2ecc71; border: none; color: #fff; padding: 8px 14px; border-radius: 9px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .btn-hist-excel {
+            background: #2ecc71; border: none; color: #fff;
+            padding: 8px 14px; border-radius: 9px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        }
 
         /* ── TOAST ── */
         #toast {
-            visibility: hidden; min-width: 240px; background: #000; color: #fff;
+            visibility: hidden; min-width: 240px; background: #1a1a1a; color: #fff;
             text-align: center; border-radius: 50px; padding: 14px 22px;
-            position: fixed; z-index: 20000; left: 50%; bottom: 130px;
+            position: fixed; z-index: 20001; left: 50%; bottom: 100px;
             transform: translateX(-50%); font-weight: 600; font-size: 14px;
-            transition: opacity 0.3s;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            transition: opacity 0.2s;
         }
         #toast.show { visibility: visible; }
     </style>
@@ -215,8 +306,7 @@
     <div class="login-box">
         <h2 style="margin:0;font-weight:800;">AS SPOR</h2>
         <p style="color:#666;font-size:13px;margin-bottom:20px;">Showroom Personel Girişi</p>
-        <!-- FIX: added Enter key support via id-based listeners in JS -->
-        <input type="text"     id="loginUser" class="login-input" placeholder="Kullanıcı Adı"
+        <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı"
                autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre"
                autocomplete="current-password">
@@ -226,16 +316,22 @@
 </div>
 
 <!-- HEADER -->
-<div class="header-hero"><div class="main-container"><h1 style="margin:0;">AS SPOR</h1></div></div>
+<div class="header-hero">
+    <div class="main-container">
+        <h1 style="margin:0;">AS SPOR</h1>
+    </div>
+</div>
 
 <div class="main-container">
     <div class="user-welcome-bar">
         <div><b>Sorumlu:</b> <span id="displayUserName">-</span></div>
         <div style="display:flex;gap:10px;">
-            <button onclick="openHistory()" style="background:#eee;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;">
+            <button onclick="openHistory()"
+                style="background:#eee;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;">
                 <i class="fas fa-history"></i> Geçmiş
             </button>
-            <button onclick="logout()" style="color:red;border:none;background:none;cursor:pointer;font-weight:700;">ÇIKIŞ</button>
+            <button onclick="logout()"
+                style="color:red;border:none;background:none;cursor:pointer;font-weight:700;">ÇIKIŞ</button>
         </div>
     </div>
 
@@ -244,7 +340,8 @@
            oninput="persistDealer()" autocomplete="off">
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-field" placeholder="Ürün Kodu, İsim veya Barkod Ara..." autocomplete="off">
+        <input type="text" id="searchInput" class="search-field"
+               placeholder="Ürün Kodu, İsim veya Barkod Ara..." autocomplete="off">
         <button class="btn-scan"   onclick="searchProduct()"><i class="fas fa-search"></i></button>
         <button class="btn-camera" onclick="toggleCamera()"><i class="fas fa-camera"></i></button>
     </div>
@@ -279,8 +376,9 @@
 <!-- CART MODAL -->
 <div id="cartModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeModal('cartModal')" style="float:right;cursor:pointer;font-size:28px;">&times;</span>
-        <h2 style="margin:0 0 6px;font-weight:800;">Sepetim</h2>
+        <span onclick="closeModal('cartModal')"
+              style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
+        <h2 style="margin:0 0 4px;font-weight:800;">Sepetim</h2>
         <p id="cartSummaryLine" style="margin:0 0 18px;color:#aaa;font-size:13px;"></p>
         <div id="cartItems"></div>
         <div style="margin-top:20px;text-align:right;font-size:20px;font-weight:800;">
@@ -291,16 +389,21 @@
             SİPARİŞİ ONAYLA
         </button>
         <div id="postConfirmActions" style="display:none;flex-direction:column;gap:10px;margin-top:15px;">
-            <input type="email" id="customerEmail" class="login-input" placeholder="Müşteri Maili (Opsiyonel)">
+            <input type="email" id="customerEmail" class="login-input"
+                   placeholder="Müşteri Maili (Opsiyonel)">
             <div style="display:flex;gap:12px;">
-                <button onclick="saveAndExport()" style="flex:1;background:#2ecc71;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
+                <button onclick="saveAndExport()"
+                    style="flex:1;background:#2ecc71;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
                     <i class="fas fa-file-excel"></i> EXCEL
                 </button>
-                <button onclick="sendMail()" id="btnMail" style="flex:1;background:#000;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
+                <button onclick="sendMail()" id="btnMail"
+                    style="flex:1;background:#000;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
                     <i class="fas fa-paper-plane"></i> MAİL AT
                 </button>
             </div>
-            <button onclick="confirmClearCart()" style="width:100%;background:#fff;color:red;border:2px solid red;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;margin-top:10px;">
+            <!-- BUG 15 FIX: custom confirm dialog instead of browser confirm() -->
+            <button onclick="askClearCart()"
+                style="width:100%;background:#fff;color:#e74c3c;border:2px solid #e74c3c;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;margin-top:10px;">
                 SEPETİ TEMİZLE
             </button>
         </div>
@@ -310,14 +413,14 @@
 <!-- HISTORY MODAL -->
 <div id="historyModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeModal('historyModal')" style="float:right;cursor:pointer;font-size:28px;">&times;</span>
+        <span onclick="closeModal('historyModal')"
+              style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
         <h2 style="font-weight:800;margin:0 0 16px;">Sipariş Geçmişi</h2>
         <div id="historyList"></div>
     </div>
 </div>
 
 <!-- PRODUCT DETAIL MODAL (bottom sheet) -->
-<!-- FIX: productModal was entirely missing its CSS — now defined above -->
 <div id="productModal">
     <div id="productModalBox">
         <button class="pm-close-btn" onclick="_closeProductModal()">&times;</button>
@@ -337,15 +440,26 @@
     </div>
 </div>
 
+<!-- BUG 15 FIX: custom confirm dialog (browser confirm() blocked in many WebViews) -->
+<div id="confirmDialog">
+    <div class="confirm-box">
+        <p id="confirmMsg">Emin misiniz?</p>
+        <div class="confirm-actions">
+            <button class="confirm-btn cancel" onclick="closeConfirm()">Vazgeç</button>
+            <button class="confirm-btn danger" id="confirmOkBtn">Evet, Temizle</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 // 1. CONSTANTS & USERS
-// ═══════════════════════════════════
-const EMAILJS_SVC = "service_qh7mngr";
-const EMAILJS_TMP = "template_2e5jxvh";
-const EMAILJS_KEY = "VSRTcl2JLxhmNWT4a";
+// ═══════════════════════════════════════
+const EMAILJS_SVC  = "service_qh7mngr";
+const EMAILJS_TMP  = "template_2e5jxvh";
+const EMAILJS_KEY  = "VSRTcl2JLxhmNWT4a";
 const FIXED_EMAILS = "emel@asspor.com, siparis@asspor.com";
 
 const USERS = {
@@ -359,49 +473,51 @@ const USERS = {
     "admin":       { name: "Test Admin",   pass: "1234" }
 };
 
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 // 2. STATE — all declared ONCE
-// ═══════════════════════════════════
-let inventory     = [];
-let cart          = [];
-let currentU      = null;
-let html5QrCode   = null;
-let cameraRunning = false;
-let modalCode     = null;
+// ═══════════════════════════════════════
+let inventory      = [];
+let cart           = [];        // slim objects only — see cartItem()
+let currentU       = null;
+let html5QrCode    = null;
+let cameraRunning  = false;
+let modalCode      = null;
 let groupedResults = {};
+// BUG 12 FIX: flag to block re-entrant camera starts
+let cameraLocked   = false;
 
 const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
 
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 // 3. INIT
-// ═══════════════════════════════════
-window.addEventListener('load', function() {
+// ═══════════════════════════════════════
+window.addEventListener('load', function () {
     emailjs.init(EMAILJS_KEY);
 
-    // FIX: Enter key support on login
-    document.getElementById('loginUser').addEventListener('keydown', function(e) {
+    // Enter key: login fields
+    document.getElementById('loginUser').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('loginPass').focus();
     });
-    document.getElementById('loginPass').addEventListener('keydown', function(e) {
+    document.getElementById('loginPass').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') checkLogin();
     });
-    // Enter key on search
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    // Enter key: search
+    document.getElementById('searchInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') searchProduct();
     });
 
-    // FIX: backdrop click on productModal
-    document.getElementById('productModal').addEventListener('click', function(e) {
+    // Backdrop click closes product modal
+    document.getElementById('productModal').addEventListener('click', function (e) {
         if (e.target === this) _closeProductModal();
     });
 
-    // FIX: session restore — ONLY restore if token matches, never trust username alone
+    // Session restore — only if token matches
     var savedUser  = localStorage.getItem('as_active_user');
     var savedToken = localStorage.getItem('as_token');
-    if (savedUser && USERS[savedUser] && savedToken === _makeToken(savedUser, USERS[savedUser].pass)) {
+    if (savedUser && USERS[savedUser] &&
+        savedToken === _makeToken(savedUser, USERS[savedUser].pass)) {
         loginSuccess(savedUser);
     } else {
-        // Wipe any stale session data
         localStorage.removeItem('as_active_user');
         localStorage.removeItem('as_token');
     }
@@ -409,25 +525,27 @@ window.addEventListener('load', function() {
     loadInventory();
 });
 
-// FIX: simple session token — prevents username-only auto-login bypass
 function _makeToken(u, p) { return btoa(u + ':' + p); }
 
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 // 4. DATA LOADING
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 function loadInventory() {
     var bar = document.getElementById('debugStatus');
     Papa.parse('data.csv', {
-        download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy',
-        complete: function(r) {
-            inventory = r.data.filter(function(row) {
+        download: true, header: true, delimiter: ';', skipEmptyLines: 'greedy',
+        complete: function (r) {
+            inventory = r.data.filter(function (row) {
                 return row['Product'] || row['Reference'] || row['EAN'];
             });
             bar.style.background = '#27ae60';
             bar.innerText = '✅ ' + inventory.length.toLocaleString('tr-TR') + ' ürün yüklendi';
-            setTimeout(function() { bar.style.display = 'none'; }, 3000);
+            setTimeout(function () {
+                bar.style.display = 'none';
+                document.body.style.paddingTop = '0';   // remove reserved space once bar is gone
+            }, 3000);
         },
-        error: function(err) {
+        error: function (err) {
             bar.style.background = '#e74c3c';
             bar.innerText = '❌ Veri yüklenemedi! data.csv kontrol edin.';
             console.error('CSV error:', err);
@@ -435,9 +553,9 @@ function loadInventory() {
     });
 }
 
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 // 5. AUTH
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
 function checkLogin() {
     var errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
@@ -465,49 +583,85 @@ function loginSuccess(u) {
     document.getElementById('displayUserName').innerText = USERS[u].name;
     document.getElementById('loginOverlay').style.display = 'none';
 
-    // Restore cart
+    // Restore cart (slim objects)
     try {
-        var savedCart = localStorage.getItem('as_cart_' + u);
-        cart = savedCart ? JSON.parse(savedCart) : [];
-    } catch(e) { cart = []; }
+        var raw = localStorage.getItem('as_cart_' + u);
+        cart = raw ? JSON.parse(raw) : [];
+    } catch (e) { cart = []; }
 
     // Restore dealer name
-    var savedDealer = localStorage.getItem('as_dealer_' + u);
-    document.getElementById('dealerName').value = savedDealer || '';
+    document.getElementById('dealerName').value =
+        localStorage.getItem('as_dealer_' + u) || '';
+
+    // BUG 2 FIX: always reset order confirm state on login
+    document.getElementById('btnConfirmOrder').style.display = 'block';
+    document.getElementById('postConfirmActions').style.display = 'none';
 
     updateCartUI();
 }
 
 function persistCart() {
-    if (currentU) {
-        try { localStorage.setItem('as_cart_' + currentU, JSON.stringify(cart)); }
-        catch(e) { console.warn('Cart persist failed:', e); }
-    }
+    if (!currentU) return;
+    try {
+        localStorage.setItem('as_cart_' + currentU, JSON.stringify(cart));
+    } catch (e) { console.warn('Cart persist failed:', e); }
 }
+
 function persistDealer() {
-    if (currentU) localStorage.setItem('as_dealer_' + currentU, document.getElementById('dealerName').value);
+    if (currentU)
+        localStorage.setItem('as_dealer_' + currentU,
+            document.getElementById('dealerName').value);
 }
 
 function logout() {
     localStorage.removeItem('as_active_user');
     localStorage.removeItem('as_token');
-    // FIX: stop camera on logout if it's running
     if (cameraRunning && html5QrCode) {
-        html5QrCode.stop().catch(function(){}).finally(function() { location.reload(); });
+        html5QrCode.stop().then(function () { location.reload(); }).catch(function () { location.reload(); });
     } else {
         location.reload();
     }
 }
 
-// ═══════════════════════════════════
-// 6. SEARCH & RENDER
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
+// 6. HELPERS
+// ═══════════════════════════════════════
+function escHtml(s) {
+    return String(s || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Slim cart item — only essential fields, no entire CSV row bloat
+function cartItem(csvRow, dealer) {
+    return {
+        product:  csvRow['Product']        || csvRow['Reference'] || '',
+        desc:     csvRow['Description']    || '',
+        ean:      csvRow['EAN']            || '',
+        size:     csvRow['EUR Size']       || '',
+        stock:    parseInt(csvRow['Stock Quantity'], 10) || 0,
+        imageURL: csvRow['ImageURL']       || '',
+        price:    parseFloat(csvRow['Tariff Price']) || 0,
+        currency: csvRow['Currency']       || 'TL',
+        dealer:   dealer,
+        qty:      0    // caller must set this after creation
+    };
+}
+
+// BUG 10 FIX: guard against undefined product/size in key
+function cartKey(item) {
+    return (item.product || '') + '||' + (item.size || '');
+}
+
+// ═══════════════════════════════════════
+// 7. SEARCH & RENDER
+// ═══════════════════════════════════════
 function searchProduct() {
     var q = document.getElementById('searchInput').value.toUpperCase().trim();
     if (!q) return;
-    if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi, bekleyin.");
+    if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi.");
 
-    var matches = inventory.filter(function(i) {
+    var matches = inventory.filter(function (i) {
         return (i['Product']     || '').toUpperCase().includes(q) ||
                (i['Description'] || '').toUpperCase().includes(q) ||
                (i['EAN']         || '').includes(q);
@@ -515,47 +669,44 @@ function searchProduct() {
     if (matches.length === 0) return showToast("Bulunamadı: " + q);
 
     groupedResults = {};
-    matches.forEach(function(item) {
+    matches.forEach(function (item) {
         var c = item['Product'] || item['Reference'] || '?';
         if (!groupedResults[c]) groupedResults[c] = [];
         groupedResults[c].push(item);
     });
 
     renderResults();
-    // FIX: clear search input so pressing Enter again doesn't duplicate results
     document.getElementById('searchInput').value = '';
-    setTimeout(function() {
+    setTimeout(function () {
         document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 60);
-}
-
-function escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function renderResults() {
     var area = document.getElementById('resultsArea');
     area.innerHTML = '';
 
-    Object.keys(groupedResults).forEach(function(code, i) {
+    Object.keys(groupedResults).forEach(function (code, i) {
         var g = groupedResults[code];
         var f = g[0];
-        var desc = f['Description'] || f['description'] || '';
-        var price = f['Tariff Price'] || '';
-        var currency = f['Currency'] || '';
+        var desc     = f['Description'] || '';
+        var price    = f['Tariff Price'] || '';
+        var currency = f['Currency']     || '';
 
         var card = document.createElement('div');
         card.className = 'product-card';
         card.style.animationDelay = (i * 0.04) + 's';
-        card.onclick = function() { openProductModal(code); };
+        card.onclick = function () { openProductModal(code); };
 
+        // BUG 16 (img): onerror hides the img cleanly, no raw JS in attribute
         var imgHtml = f['ImageURL']
             ? '<img src="' + escHtml(f['ImageURL']) + '" class="product-img" onerror="this.style.display=\'none\'" alt="">'
             : '<div class="product-no-img"><i class="fas fa-tshirt"></i></div>';
 
-        card.innerHTML = imgHtml + '<div class="product-info-wrapper">'
+        card.innerHTML = imgHtml
+            + '<div class="product-info-wrapper">'
             + '<p class="product-code-label">' + escHtml(code) + '</p>'
-            + '<p class="product-name-label">' + escHtml(desc) + '</p>'
+            + '<p class="product-name-label">'  + escHtml(desc) + '</p>'
             + '<p style="font-size:10px;color:#bbb;margin:4px 0 0;">EAN: ' + escHtml(f['EAN'] || '-') + '</p>'
             + '<span style="font-size:18px;font-weight:900;color:#000;margin-top:10px;display:block;">'
             + escHtml(price) + ' ' + escHtml(currency) + '</span>'
@@ -565,94 +716,116 @@ function renderResults() {
     });
 }
 
-// ═══════════════════════════════════
-// 7. PRODUCT MODAL
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
+// 8. PRODUCT MODAL
+// ═══════════════════════════════════════
 function openProductModal(code) {
     var g = groupedResults[code];
     if (!g || !g.length) return;
     var f = g[0];
+
+    // BUG 7 FIX: clear sizes FIRST, then set modalCode — no stale DOM collision
+    document.getElementById('pm-sizes').innerHTML = '';
     modalCode = code;
 
+    // Image
     var imgEl = document.getElementById('productModalImg');
-    imgEl.src = f['ImageURL'] || '';
-    imgEl.style.display = f['ImageURL'] ? 'block' : 'none';
+    if (f['ImageURL']) {
+        imgEl.src = f['ImageURL'];
+        imgEl.style.display = 'block';
+    } else {
+        imgEl.removeAttribute('src');   // avoid spurious network request to current page
+        imgEl.style.display = 'none';
+    }
 
     document.getElementById('pm-code').innerText  = code;
-    document.getElementById('pm-name').innerText  = f['Description'] || '';
+    document.getElementById('pm-name').innerText  = f['Description']      || '';
     document.getElementById('pm-ean').innerText   = f['EAN'] ? 'EAN: ' + f['EAN'] : '';
     document.getElementById('pm-desc').innerText  = f['Long Description'] || '';
-    document.getElementById('pm-price').innerText = (f['Tariff Price'] || '-') + ' ' + (f['Currency'] || '');
+    document.getElementById('pm-price').innerText =
+        (f['Tariff Price'] || '-') + ' ' + (f['Currency'] || '');
 
-    // FIX: reset all qty inputs to 0 when modal opens — no stale values from previous open
-    document.getElementById('pm-sizes').innerHTML = g.map(function(item, idx) {
-        var stock = parseInt(item['Stock Quantity']) || 0;
-        var alreadyInCart = 0;
-        cart.forEach(function(c) {
-            if (c['Product'] === item['Product'] && c['EUR Size'] === item['EUR Size']) alreadyInCart = c.qty;
+    // Build size rows — all reset to 0
+    document.getElementById('pm-sizes').innerHTML = g.map(function (item, idx) {
+        var stock = parseInt(item['Stock Quantity'], 10) || 0;
+        // Show how many are already in cart for this size
+        var inCart = 0;
+        cart.forEach(function (c) {
+            if (c.product === (item['Product'] || item['Reference']) &&
+                c.size === item['EUR Size']) inCart = c.qty;
         });
-        return '<div class="size-btn-row' + (alreadyInCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
-            + '<div><span style="font-weight:800;font-size:15px;">' + escHtml(item['EUR Size'] || '-') + '</span>'
-            + '<br><small style="color:#888;font-size:11px;">Stok: ' + stock + (alreadyInCart > 0 ? ' · Sepette: ' + alreadyInCart : '') + '</small></div>'
+        return '<div class="size-btn-row' + (inCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
+            + '<div>'
+            + '<span style="font-weight:800;font-size:15px;">' + escHtml(item['EUR Size'] || '-') + '</span>'
+            + '<br><small style="color:#888;font-size:11px;">Stok: ' + stock
+            + (inCart > 0 ? ' · Sepette: ' + inCart : '') + '</small>'
+            + '</div>'
             + '<div class="pm-qty-ctrl">'
             + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',-1)">−</button>'
-            + '<input type="number" id="pm-qty-' + idx + '" class="pm-qty-inp" value="0" min="0" max="' + (stock || 999) + '">'
+            + '<input type="number" id="pm-qty-' + idx + '" class="pm-qty-inp"'
+            + ' value="0" min="0" max="' + (stock || 999) + '">'
             + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',1,' + (stock || 999) + ')">+</button>'
-            + '</div></div>';
+            + '</div>'
+            + '</div>';
     }).join('');
 
     document.getElementById('productModal').classList.add('open');
     document.body.style.overflow = 'hidden';
 }
 
+// BUG 9 FIX: clamp NaN from manual text input before arithmetic
 function pmQty(idx, delta, max) {
     var el = document.getElementById('pm-qty-' + idx);
     if (!el) return;
-    var v = parseInt(el.value || 0) + delta;
+    var current = parseInt(el.value, 10);
+    if (isNaN(current)) current = 0;   // guard NaN
+    var v = current + delta;
     v = Math.max(0, max !== undefined ? Math.min(v, max) : v);
     el.value = v;
-    // Highlight row if qty > 0
     var row = document.getElementById('sizerow-' + idx);
     if (row) row.className = 'size-btn-row' + (v > 0 ? ' has-qty' : '');
 }
 
+// BUG 14 FIX: productModal only ever closed via its own function, never via closeModal()
 function _closeProductModal() {
     document.getElementById('productModal').classList.remove('open');
     document.body.style.overflow = '';
     modalCode = null;
 }
 
+// BUG 8 FIX: snapshot modalCode at call time so late async events can't corrupt it
 function addToCartFromModal() {
+    var codeSnapshot = modalCode;   // capture before any async gap
+    if (!codeSnapshot) return;
     var d = document.getElementById('dealerName').value.trim();
     if (!d) return showToast("⚠️ Önce Bayi Adı Girin!");
-    var g = groupedResults[modalCode];
+
+    var g = groupedResults[codeSnapshot];
     if (!g) return;
 
     var added = 0;
-    g.forEach(function(item, idx) {
+    g.forEach(function (item, idx) {
         var el = document.getElementById('pm-qty-' + idx);
-        var q = parseInt(el ? el.value : 0) || 0;
-        if (q > 0) {
-            // FIX: merge into existing cart entry if same product+size
-            var exist = cart.find(function(x) {
-                return x['Product'] === item['Product'] && x['EUR Size'] === item['EUR Size'];
-            });
-            if (exist) { exist.qty += q; }
-            else {
-                cart.push(Object.assign({}, item, {
-                    qty: q,
-                    price: parseFloat(item['Tariff Price']) || 0,
-                    dealer: d
-                }));
-            }
-            added += q;
+        var q = parseInt(el ? el.value : '0', 10);
+        if (isNaN(q) || q <= 0) return;   // BUG 9 secondary guard
+
+        // Merge into existing cart entry if same product + size
+        var key = (item['Product'] || item['Reference'] || '') + '||' + (item['EUR Size'] || '');
+        var exist = cart.find(function (x) { return cartKey(x) === key; });
+        if (exist) {
+            exist.qty += q;
+        } else {
+            var newItem = cartItem(item, d);
+            newItem.qty = q;
+            cart.push(newItem);
         }
+        added += q;
     });
 
     if (added > 0) {
         persistCart();
         updateCartUI();
-        // Reset confirm/post-confirm state
+        // Reset confirm state when cart changes
         document.getElementById('btnConfirmOrder').style.display = 'block';
         document.getElementById('postConfirmActions').style.display = 'none';
         showToast('✅ ' + added + ' adet eklendi.');
@@ -662,32 +835,30 @@ function addToCartFromModal() {
     }
 }
 
-// ═══════════════════════════════════
-// 8. CART UI
-// ═══════════════════════════════════
-
-// Stable key so we never use fragile array indices
-function cartKey(item) {
-    return (item['Product'] || '') + '||' + (item['EUR Size'] || '');
-}
-
+// ═══════════════════════════════════════
+// 9. CART UI
+// ═══════════════════════════════════════
 function updateCartUI() {
-    var count   = cart.reduce(function(a, b) { return a + b.qty; }, 0);
-    var total   = cart.reduce(function(a, b) { return a + b.price * b.qty; }, 0);
-    var currency = (cart.length > 0 && cart[0]['Currency']) ? cart[0]['Currency'] : 'TL';
+    var count    = cart.reduce(function (a, b) { return a + b.qty; }, 0);
+    // BUG 5 FIX: guard NaN prices so total never shows "NaN"
+    var total    = cart.reduce(function (a, b) {
+        var p = isNaN(b.price) ? 0 : b.price;
+        return a + p * b.qty;
+    }, 0);
+    var currency = cart.length > 0 ? (cart[0].currency || 'TL') : 'TL';
     var totalStr = total.toFixed(2) + ' ' + currency;
 
-    document.getElementById('cartTotal').innerText     = totalStr;
-    document.getElementById('st-qty').innerText        = count;
-    document.getElementById('st-total').innerText      = totalStr;
+    document.getElementById('cartTotal').innerText = totalStr;
+    document.getElementById('st-qty').innerText    = count;
+    document.getElementById('st-total').innerText  = totalStr;
     document.getElementById('cartSummaryLine').innerText =
         count > 0 ? count + ' adet · ' + cart.length + ' kalem' : '';
 
     var bar = document.getElementById('cartSummaryBar');
     if (count > 0) bar.classList.add('active');
-    else bar.classList.remove('active');
+    else           bar.classList.remove('active');
 
-    // If cart modal is open, re-render it in-place
+    // Re-render cart modal in-place if it's open
     if (document.getElementById('cartModal').style.display === 'block') {
         _renderCartItems();
     }
@@ -705,168 +876,220 @@ function _renderCartItems() {
         return;
     }
 
-    // Group by product code (maintain insertion order)
+    // Group by product code
     var groupOrder = [];
     var groups = {};
-    cart.forEach(function(item) {
-        var code = item['Product'] || item['Reference'] || '?';
+    cart.forEach(function (item) {
+        var code = item.product || '?';
         if (!groups[code]) {
-            groups[code] = { name: item['Description'] || '', img: item['ImageURL'] || '', items: [], subTotal: 0, subQty: 0 };
+            groups[code] = { name: item.desc, img: item.imageURL, currency: item.currency, items: [], subTotal: 0, subQty: 0 };
             groupOrder.push(code);
         }
         groups[code].items.push(item);
-        groups[code].subTotal += item.price * item.qty;
+        // BUG 5 secondary: guard NaN in subtotal
+        groups[code].subTotal += (isNaN(item.price) ? 0 : item.price) * item.qty;
         groups[code].subQty   += item.qty;
     });
 
-    var currency = (cart.length > 0 && cart[0]['Currency']) ? cart[0]['Currency'] : 'TL';
-
-    list.innerHTML = groupOrder.map(function(code) {
+    list.innerHTML = groupOrder.map(function (code) {
         var g = groups[code];
+        var cur = g.currency || 'TL';
+
+        // BUG 13 FIX: only render img tag if imageURL is non-empty
+        var thumbHtml = g.img
+            ? '<img src="' + escHtml(g.img) + '" class="cart-thumb" onerror="this.style.display=\'none\'" alt="">'
+            : '<div class="cart-thumb" style="background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:24px;"><i class="fas fa-tshirt"></i></div>';
+
         return '<div class="cart-group">'
             + '<div class="cart-group-header">'
-            + '<img src="' + escHtml(g.img) + '" class="cart-thumb" onerror="this.style.display=\'none\'" alt="">'
-            + '<div style="flex:1">'
+            + thumbHtml
+            + '<div style="flex:1;min-width:0;">'
             + '<div style="font-size:11px;font-weight:800;color:var(--accent);">' + escHtml(code) + '</div>'
-            + '<div style="font-weight:800;font-size:14px;">' + escHtml(g.name) + '</div>'
-            + '<div style="font-size:12px;color:#555;margin-top:4px;"><b>' + g.subQty + ' ADET</b> — ' + g.subTotal.toFixed(2) + ' ' + escHtml(currency) + '</div>'
+            + '<div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(g.name) + '</div>'
+            + '<div style="font-size:12px;color:#555;margin-top:4px;"><b>' + g.subQty + ' ADET</b> — '
+            + g.subTotal.toFixed(2) + ' ' + escHtml(cur) + '</div>'
             + '</div></div>'
-            + g.items.map(function(item) {
+            + g.items.map(function (item) {
                 var key = encodeURIComponent(cartKey(item));
                 return '<div class="cart-size-row">'
-                    + '<span style="font-weight:700;">Beden: ' + escHtml(item['EUR Size'] || '-') + ' <small style="color:#aaa;font-weight:400;">(Stok: ' + (item['Stock Quantity'] || 0) + ')</small></span>'
-                    // FIX: cart qty changed with buttons only — no freeform input that loses focus on re-render
+                    + '<div>'
+                    + '<span style="font-weight:700;">Beden: ' + escHtml(item.size || '-') + '</span>'
+                    + '<br><small style="color:#aaa;">Stok: ' + escHtml(String(item.stock || 0)) + '</small>'
+                    + '</div>'
+                    + '<div style="display:flex;align-items:center;gap:10px;">'
                     + '<div class="cart-qty-ctrl">'
                     + '<button class="cart-btn-qty" onclick="cartChangeQty(\'' + key + '\',-1)">−</button>'
                     + '<span class="cart-qty-display">' + item.qty + '</span>'
                     + '<button class="cart-btn-qty" onclick="cartChangeQty(\'' + key + '\',1)">+</button>'
-                    + '</div></div>';
+                    + '</div>'
+                    + '<span style="font-size:12px;color:#aaa;min-width:70px;text-align:right;">'
+                    + (isNaN(item.price) ? '-' : (item.price * item.qty).toFixed(2)) + ' ' + escHtml(cur)
+                    + '</span>'
+                    + '</div>'
+                    + '</div>';
             }).join('')
             + '</div>';
     }).join('');
 }
 
-// FIX: use stable key — never fragile array index
+// BUG 6 + BUG 10 FIX: stable key lookup, never array index; no scroll-jump on remove
 function cartChangeQty(encodedKey, delta) {
-    var key = decodeURIComponent(encodedKey);
-    var item = cart.find(function(c) { return cartKey(c) === key; });
+    var key  = decodeURIComponent(encodedKey);
+    var item = cart.find(function (c) { return cartKey(c) === key; });
     if (!item) return;
     item.qty = Math.max(0, item.qty + delta);
-    if (item.qty === 0) cart = cart.filter(function(c) { return cartKey(c) !== key; });
+    if (item.qty === 0) {
+        cart = cart.filter(function (c) { return cartKey(c) !== key; });
+    }
     persistCart();
     updateCartUI();
 }
 
 function confirmAndLockOrder() {
     if (cart.length === 0) return showToast("Sepet boş!");
-    var d = document.getElementById('dealerName').value.trim();
-    if (!d) return showToast("⚠️ Bayi adı giriniz!");
-    document.getElementById('btnConfirmOrder').style.display = 'none';
-    document.getElementById('postConfirmActions').style.display = 'flex';
+    if (!document.getElementById('dealerName').value.trim())
+        return showToast("⚠️ Bayi adı giriniz!");
+    document.getElementById('btnConfirmOrder').style.display     = 'none';
+    document.getElementById('postConfirmActions').style.display  = 'flex';
     showToast("✓ Sipariş Onaylandı.");
 }
 
-function confirmClearCart() {
-    if (confirm("Tüm sepeti temizleyip yeni satışa başlamak istiyor musunuz?")) {
+// BUG 15 FIX: use custom confirm dialog
+function askClearCart() {
+    document.getElementById('confirmMsg').innerText =
+        'Tüm sepeti temizleyip yeni satışa başlamak istiyor musunuz?';
+    document.getElementById('confirmOkBtn').onclick = function () {
         cart = [];
         persistCart();
         updateCartUI();
         closeModal('cartModal');
-    }
+        // Reset confirm state
+        document.getElementById('btnConfirmOrder').style.display = 'block';
+        document.getElementById('postConfirmActions').style.display = 'none';
+        closeConfirm();
+    };
+    document.getElementById('confirmDialog').classList.add('open');
+}
+function closeConfirm() {
+    document.getElementById('confirmDialog').classList.remove('open');
 }
 
-// ═══════════════════════════════════
-// 9. EXCEL EXPORT
-// ═══════════════════════════════════
+// BUG 14 FIX: closeModal only handles .modal elements, never #productModal
+function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
+// ═══════════════════════════════════════
+// 10. EXCEL EXPORT
+// ═══════════════════════════════════════
 function saveAndExport() {
     if (cart.length === 0) return showToast("Sepet boş!");
     var dealer = document.getElementById('dealerName').value.trim() || 'siparis';
-    // FIX: export clean column set — not raw internal cart object
-    var rows = cart.map(function(i) {
+
+    // BUG 4 FIX: deep-copy cart before saving to history
+    var snapshot = JSON.parse(JSON.stringify(cart));
+    saveToHistory(snapshot, dealer);
+
+    var rows = cart.map(function (i) {
         return {
-            'Ürün Kodu':   i['Product']     || '',
-            'Açıklama':    i['Description'] || '',
-            'Beden':       i['EUR Size']    || '',
+            'Ürün Kodu':   i.product,
+            'Açıklama':    i.desc,
+            'Beden':       i.size,
             'Adet':        i.qty,
             'Birim Fiyat': i.price,
-            'Toplam':      (i.price * i.qty).toFixed(2),
-            'Para Birimi': i['Currency']    || '',
-            'Bayi':        i.dealer         || ''
+            'Toplam':      (isNaN(i.price) ? 0 : i.price * i.qty).toFixed(2),
+            'Para Birimi': i.currency,
+            'Bayi':        i.dealer
         };
     });
-    saveToHistory(cart, dealer);
+
     var ws = XLSX.utils.json_to_sheet(rows);
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Siparis");
-    XLSX.writeFile(wb, 'AsSpor_' + dealer + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    XLSX.writeFile(wb, 'AsSpor_' + dealer + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     showToast("✅ Excel indirildi.");
 }
 
-// ═══════════════════════════════════
-// 10. EMAIL
-// ═══════════════════════════════════
+// ═══════════════════════════════════════
+// 11. EMAIL
+// ═══════════════════════════════════════
 function sendMail() {
     if (cart.length === 0) return showToast("Sepet boş!");
     var dealer = document.getElementById('dealerName').value.trim();
     if (!dealer) return showToast("⚠️ Bayi adı giriniz!");
 
     var btn = document.getElementById('btnMail');
-    btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GÖNDERİLİYOR...';
 
     var table = '<table border="1" style="border-collapse:collapse;width:100%;font-family:Arial;font-size:13px;">'
         + '<tr style="background:#000;color:#fff;"><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th><th>Tutar</th></tr>';
-    cart.forEach(function(i) {
-        table += '<tr><td>' + escHtml(i['Product']) + '</td><td>' + escHtml(i['Description']) + '</td>'
-            + '<td>' + escHtml(i['EUR Size']) + '</td><td>' + i.qty + '</td>'
-            + '<td>' + (i.price * i.qty).toFixed(2) + ' ' + escHtml(i['Currency'] || '') + '</td></tr>';
+    cart.forEach(function (i) {
+        table += '<tr>'
+            + '<td>' + escHtml(i.product)  + '</td>'
+            + '<td>' + escHtml(i.desc)     + '</td>'
+            + '<td>' + escHtml(i.size)     + '</td>'
+            + '<td>' + i.qty               + '</td>'
+            + '<td>' + (isNaN(i.price) ? '-' : (i.price * i.qty).toFixed(2)) + ' ' + escHtml(i.currency) + '</td>'
+            + '</tr>';
     });
     table += '</table>';
 
     var extra = document.getElementById('customerEmail').value.trim();
+
+    // BUG 11 FIX: avoid .finally() — use .then()/.catch() for WebView compat
     emailjs.send(EMAILJS_SVC, EMAILJS_TMP, {
         manager:        USERS[currentU].name,
         dealer:         dealer,
         order_details:  table,
-        total_qty:      cart.reduce(function(s, i) { return s + i.qty; }, 0),
+        total_qty:      cart.reduce(function (s, i) { return s + i.qty; }, 0),
         customer_email: FIXED_EMAILS + (extra ? ', ' + extra : '')
     })
-    .then(function() {
-        // FIX: save to history after successful mail send
-        saveToHistory(cart, dealer);
+    .then(function () {
+        // BUG 4 FIX: deep-copy cart snapshot for history
+        saveToHistory(JSON.parse(JSON.stringify(cart)), dealer);
         showToast("✅ Sipariş Maili Gönderildi!");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> MAİL AT';
     })
-    .catch(function(err) {
+    .catch(function (err) {
         console.error('EmailJS error:', err);
         showToast("❌ Mail gönderilemedi. Tekrar deneyin.");
-    })
-    .finally(function() { btn.disabled = false; btn.innerText = "MAİL AT"; });
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> MAİL AT';
+    });
 }
 
-// ═══════════════════════════════════
-// 11. ORDER HISTORY
-// ═══════════════════════════════════
-function saveToHistory(items, dealer) {
+// ═══════════════════════════════════════
+// 12. ORDER HISTORY
+// ═══════════════════════════════════════
+function saveToHistory(itemsSnapshot, dealer) {
     try {
         var h = JSON.parse(localStorage.getItem('as_history') || '[]');
-        h.unshift({ id: Date.now(), date: new Date().toLocaleString('tr-TR'), dealer: dealer, items: items });
+        h.unshift({
+            id:     Date.now(),
+            date:   new Date().toLocaleString('tr-TR'),
+            dealer: dealer,
+            items:  itemsSnapshot   // BUG 4 FIX: always a deep copy
+        });
         localStorage.setItem('as_history', JSON.stringify(h.slice(0, 50)));
-    } catch(e) { console.warn('History save failed:', e); }
+    } catch (e) { console.warn('History save failed:', e); }
 }
 
-// FIX: openHistory was just an alert stub — now fully functional
 function openHistory() {
     var h = [];
-    try { h = JSON.parse(localStorage.getItem('as_history') || '[]'); } catch(e) {}
+    try { h = JSON.parse(localStorage.getItem('as_history') || '[]'); } catch (e) {}
     var list = document.getElementById('historyList');
     if (h.length === 0) {
         list.innerHTML = '<p style="text-align:center;color:#bbb;padding:20px;">Geçmiş yok.</p>';
     } else {
-        list.innerHTML = h.map(function(o) {
-            var totalQty = o.items.reduce(function(s, i) { return s + i.qty; }, 0);
+        list.innerHTML = h.map(function (o) {
+            var totalQty = o.items.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
             return '<div class="hist-item">'
                 + '<div class="hist-item-info">'
                 + '<b>' + escHtml(o.dealer) + '</b>'
-                + '<small>' + o.date + ' · ' + totalQty + ' adet · ' + o.items.length + ' kalem</small>'
+                + '<small>' + escHtml(o.date) + ' · ' + totalQty + ' adet · ' + o.items.length + ' kalem</small>'
                 + '</div>'
                 + '<button class="btn-hist-excel" onclick="downloadHistItem(' + o.id + ')">Excel</button>'
                 + '</div>';
@@ -878,91 +1101,116 @@ function openHistory() {
 function downloadHistItem(id) {
     try {
         var h   = JSON.parse(localStorage.getItem('as_history') || '[]');
-        var rec = h.find(function(o) { return o.id === id; });
+        var rec = h.find(function (o) { return o.id === id; });
         if (!rec) return showToast("Kayıt bulunamadı.");
-        var rows = rec.items.map(function(i) {
+
+        var rows = rec.items.map(function (i) {
             return {
-                'Ürün Kodu':   i['Product']     || '',
-                'Açıklama':    i['Description'] || '',
-                'Beden':       i['EUR Size']    || '',
+                'Ürün Kodu':   i.product  || i['Product']     || '',
+                'Açıklama':    i.desc     || i['Description'] || '',
+                'Beden':       i.size     || i['EUR Size']    || '',
                 'Adet':        i.qty,
-                'Birim Fiyat': i.price,
-                'Toplam':      (i.price * i.qty).toFixed(2),
-                'Para Birimi': i['Currency']    || '',
-                'Bayi':        i.dealer         || rec.dealer
+                'Birim Fiyat': i.price    || 0,
+                'Toplam':      ((i.price || 0) * i.qty).toFixed(2),
+                'Para Birimi': i.currency || i['Currency']    || '',
+                'Bayi':        i.dealer   || rec.dealer
             };
         });
+
         var ws = XLSX.utils.json_to_sheet(rows);
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Siparis");
         XLSX.writeFile(wb, 'Gecmis_' + rec.dealer + '_' + rec.id + '.xlsx');
-    } catch(e) { showToast("İndirme hatası."); }
+    } catch (e) {
+        console.error('downloadHistItem error:', e);
+        showToast("İndirme hatası.");
+    }
 }
 
-// ═══════════════════════════════════
-// 12. CAMERA
-// ═══════════════════════════════════
-// FIX: toggleCamera was not awaiting stop() — race condition caused camera LED to stay on
-window.toggleCamera = async function() {
+// ═══════════════════════════════════════
+// 13. CAMERA
+// ═══════════════════════════════════════
+window.toggleCamera = async function () {
+    // BUG 12 FIX: prevent re-entrant starts via lock flag
+    if (cameraLocked) return;
+
     var container = document.getElementById('reader-container');
+
     if (cameraRunning && html5QrCode) {
-        try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) { console.warn(e); }
+        cameraLocked = true;
+        try { await html5QrCode.stop(); html5QrCode.clear(); } catch (e) { console.warn(e); }
         html5QrCode   = null;
         cameraRunning = false;
+        cameraLocked  = false;
         container.style.display = 'none';
         return;
     }
+
     container.style.display = 'block';
     html5QrCode = new Html5Qrcode("reader");
+
     var config = {
         fps: 20,
         qrbox: { width: 250, height: 100 },
         formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.QR_CODE
         ]
     };
+
     try {
-        await html5QrCode.start({ facingMode: "environment" }, config,
-            async function(decodedText) {
-                beep.play().catch(function(){});
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            function (decodedText) {
+                // BUG 12 FIX: synchronous stop inside callback — no async to race with
+                beep.play().catch(function () {});
                 document.getElementById('searchInput').value = decodedText;
                 searchProduct();
                 showToast("📸 " + decodedText);
-                // Stop camera after successful scan
-                if (cameraRunning) {
-                    try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {}
-                    html5QrCode   = null;
-                    cameraRunning = false;
-                    container.style.display = 'none';
+
+                if (cameraRunning && !cameraLocked) {
+                    cameraLocked = true;
+                    html5QrCode.stop().then(function () {
+                        html5QrCode.clear();
+                        html5QrCode   = null;
+                        cameraRunning = false;
+                        cameraLocked  = false;
+                        container.style.display = 'none';
+                    }).catch(function (e) {
+                        console.warn('Camera stop error in scan callback:', e);
+                        html5QrCode   = null;
+                        cameraRunning = false;
+                        cameraLocked  = false;   // always unlock so button works again
+                        container.style.display = 'none';
+                    });
                 }
             },
-            function() {}
+            function () {}  // frame error — ignore
         );
         cameraRunning = true;
-    } catch(err) {
+    } catch (err) {
         showToast("Kamera açılamadı — izin verin.");
         console.error('Camera error:', err);
         html5QrCode   = null;
         cameraRunning = false;
+        cameraLocked  = false;
         container.style.display = 'none';
     }
 };
 
-// ═══════════════════════════════════
-// 13. UTILITIES
-// ═══════════════════════════════════
-function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-}
-
+// ═══════════════════════════════════════
+// 14. TOAST
+// ═══════════════════════════════════════
 function showToast(msg) {
     var t = document.getElementById('toast');
     t.innerText = msg;
     t.className = 'show';
     clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.className = ''; }, 3000);
+    t._timer = setTimeout(function () { t.className = ''; }, 3000);
 }
 </script>
 </body>
