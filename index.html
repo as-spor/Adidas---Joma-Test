@@ -44,7 +44,6 @@
         .scanner-laser { position: absolute; left: 10%; width: 80%; height: 2px; background: red; box-shadow: 0 0 8px red; z-index: 9; animation: laserSweep 1.6s infinite ease-in-out; }
         @keyframes laserSweep { 0%,100%{top:40px} 50%{top:180px} }
 
-        /* ── YENİ: ÜRÜN KARTLARI (BÜYÜK FOTO) ── */
         #resultsArea { display: grid; grid-template-columns: repeat(1, 1fr); gap: 14px; margin-top: 25px; }
         @media(min-width: 600px) { #resultsArea { grid-template-columns: repeat(2, 1fr); } }
         .product-card { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.07); border: 1.5px solid #eee; display: flex; flex-direction: column; cursor: pointer; }
@@ -52,19 +51,12 @@
         .product-info-wrapper { padding: 15px 18px; }
         .product-code-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; }
         .product-name-label { font-size: 16px; font-weight: 800; color: #000; margin-top: 4px; }
-        .product-ean-label { font-size: 11px; color: #bbb; font-weight: 600; margin-top: 2px; }
-
-        #productModal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.72); z-index: 11000; align-items: flex-end; justify-content: center; }
-        #productModal.open { display: flex; }
-        #productModalBox { background: #fff; width: 100%; max-width: 560px; border-radius: 28px 28px 0 0; padding-bottom: 40px; max-height: 95vh; overflow-y: auto; position: relative; }
         
-        /* ── YENİ: YAN YANA BEDENLER ── */
         .size-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .size-btn-row { flex: 1 1 calc(50% - 8px); display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee; }
         .pm-qty-inp { width: 45px; text-align: center; border: none; background: transparent; height: 38px; font-weight: 800; font-size: 16px; outline: none; }
 
-        /* ── STICKY CART SUMMARY BAR ── */
-        #cartSummaryBar { position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #fff; padding: 15px 20px; display: none; align-items: center; justify-content: space-between; z-index: 9000; border-top: 3px solid var(--accent); }
+        #cartSummaryBar { position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #fff; padding: 15px 20px; display: none; align-items: center; justify-content: space-between; z-index: 9000; border-top: 3px solid var(--accent); cursor: pointer; }
         #cartSummaryBar.active { display: flex; }
 
         .cart-group { border: 1.5px solid #eee; border-radius: 18px; margin-bottom: 16px; overflow: hidden; background: #fff; }
@@ -75,7 +67,7 @@
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 12000; }
         .modal-content { background: white; margin: 2% auto; width: 95%; max-width: 550px; padding: 25px; border-radius: 24px; max-height: 90vh; overflow-y: auto; }
-
+        
         #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 20000; left: 50%; bottom: 130px; transform: translateX(-50%); font-weight: 600; }
         #toast.show { visibility: visible; }
     </style>
@@ -91,7 +83,7 @@
         <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı" autocomplete="off">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
         <button onclick="checkLogin()" class="login-btn">GİRİŞ YAP</button>
-        <div id="loginError" style="color:red; display:none; margin-top:10px;"></div>
+        <div id="loginError" style="color:red; display:none; margin-top:10px; font-weight:700;"></div>
     </div>
 </div>
 
@@ -123,9 +115,7 @@
 </div>
 
 <div id="cartSummaryBar" onclick="openCart()">
-    <div>
-        <span id="st-qty" style="font-weight:800; font-size:18px;">0</span> <span style="font-size:14px; opacity:0.8;">ADET ÜRÜN</span>
-    </div>
+    <div><span id="st-qty" style="font-weight:800; font-size:18px;">0</span> <span style="font-size:14px; opacity:0.8;">ADET ÜRÜN</span></div>
     <div style="text-align:right;">
         <div style="font-size:12px; opacity:0.7;">TOPLAM TUTAR</div>
         <div id="st-total" style="font-weight:900; font-size:20px; color:var(--accent);">0.00 TL</div>
@@ -162,7 +152,6 @@
             <div id="pm-ean" style="font-size:12px;color:#aaa;"></div>
             <div id="pm-desc" style="font-size:14px;color:#666;margin:10px 0;line-height:1.4;"></div>
             <div id="pm-price" style="font-size:28px;font-weight:900;color:#000;margin-bottom:20px;"></div>
-            <div style="font-weight:800; margin-bottom:10px;">BEDEN SEÇİMİ</div>
             <div id="pm-sizes" class="size-grid"></div>
             <button onclick="addToCartFromModal()" style="width:100%;background:#000;color:#fff;border:none;padding:18px;border-radius:15px;font-weight:800;margin-top:25px;">SEPETE EKLE</button>
         </div>
@@ -172,8 +161,20 @@
 <div id="toast"></div>
 
 <script>
+// --- 1. PERSONEL VE SABİTLER (RESTORE EDİLDİ) ---
 const EMAILJS_SVC = "service_qh7mngr", EMAILJS_TMP = "template_2e5jxvh", EMAILJS_KEY = "VSRTcl2JLxhmNWT4a";
-const USERS = { "adnankaya": "1234", "cinargokce": "1234", "lutfuozturk": "1234", "meftunicay": "1234", "muratturgut": "1234", "ozkanocak": "1234", "serkanmert": "1234", "admin": "1234" };
+const FIXED_EMAILS = "emel@asspor.com, siparis@asspor.com";
+
+const USERS = {
+    "adnankaya": { name: "Adnan Kaya", pass: "1234" },
+    "cinargokce": { name: "Çınar Gökçe", pass: "1234" },
+    "lutfuozturk": { name: "Lütfü Öztürk", pass: "1234" },
+    "meftunicay": { name: "Meftuni Çay", pass: "1234" },
+    "muratturgut": { name: "Murat Turgut", pass: "1234" },
+    "ozkanocak": { name: "Özkan Ocak", pass: "1234" },
+    "serkanmert": { name: "Serkan Mert", pass: "1234" },
+    "admin": { name: "Test Admin", pass: "1234" }
+};
 
 let inventory = [], cart = [], currentU = null, html5QrCode = null, modalCode = null, groupedResults = {};
 const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
@@ -181,27 +182,26 @@ const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-pr
 window.onload = function() {
     emailjs.init(EMAILJS_KEY);
     const saved = localStorage.getItem('as_active_user');
-    if(saved) loginSuccess(saved);
+    if(saved && USERS[saved]) loginSuccess(saved);
 
     Papa.parse('data.csv', {
         download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy',
         complete: (r) => { inventory = r.data.filter(row => row['Product'] || row['Reference'] || row['EAN']); document.getElementById('debugStatus').style.display='none'; }
     });
 
-    // FIX: Enter Key Support
     document.getElementById("searchInput").addEventListener("keypress", (e) => { if(e.key === "Enter") searchProduct(); });
 };
 
 function checkLogin() {
-    const u = document.getElementById('loginUser').value.trim().toLowerCase();
+    const u = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, '');
     const p = document.getElementById('loginPass').value;
-    if(USERS[u] && USERS[u] === p) { localStorage.setItem('as_active_user', u); loginSuccess(u); }
-    else { document.getElementById('loginError').style.display='block'; document.getElementById('loginError').innerText="Hatalı!"; }
+    if(USERS[u] && USERS[u].pass === p) { localStorage.setItem('as_active_user', u); loginSuccess(u); }
+    else { document.getElementById('loginError').style.display='block'; document.getElementById('loginError').innerText="Hatalı Giriş!"; }
 }
 
 function loginSuccess(u) {
     currentU = u;
-    document.getElementById('displayUserName').innerText = u.toUpperCase();
+    document.getElementById('displayUserName').innerText = USERS[u].name;
     document.getElementById('loginOverlay').style.display='none';
     const savedCart = localStorage.getItem('as_cart_' + u);
     cart = savedCart ? JSON.parse(savedCart) : [];
@@ -217,12 +217,7 @@ function logout() { localStorage.removeItem('as_active_user'); location.reload()
 function searchProduct() {
     const q = document.getElementById('searchInput').value.toUpperCase().trim();
     if(!q) return;
-    // FIX: Search by Product, Description, or EAN (Barkod)
-    const matches = inventory.filter(i => 
-        (i.Product||"").toUpperCase().includes(q) || 
-        (i.Description||"").toUpperCase().includes(q) || 
-        (i.EAN||"").includes(q)
-    );
+    const matches = inventory.filter(i => (i.Product||"").toUpperCase().includes(q) || (i.Description||"").toUpperCase().includes(q) || (i.EAN||"").includes(q));
     if(matches.length === 0) return showToast("Bulunamadı!");
     groupedResults = {};
     matches.forEach(item => { const c = item.Product || item.Reference; if(!groupedResults[c]) groupedResults[c] = []; groupedResults[c].push(item); });
@@ -235,14 +230,7 @@ function renderResults() {
         const g = groupedResults[code], f = g[0];
         const card = document.createElement('div'); card.className = 'product-card';
         card.onclick = () => openProductModal(code);
-        card.innerHTML = `
-            <img src="${f.ImageURL || ''}" class="product-img">
-            <div class="product-info-wrapper">
-                <p class="product-code-label">${code}</p>
-                <p class="product-name-label">${f.Description}</p>
-                <p class="product-ean-label">EAN: ${f.EAN || '-'}</p>
-                <span style="font-size:18px; font-weight:900; color:#000; margin-top:12px; display:block;">${f['Tariff Price']} ${f['Currency']}</span>
-            </div>`;
+        card.innerHTML = `<img src="${f.ImageURL || ''}" class="product-img"><div class="product-info-wrapper"><p class="product-code-label">${code}</p><p class="product-name-label">${f.Description}</p><p style="font-size:10px; color:#bbb; margin-top:2px;">EAN: ${f.EAN || '-'}</p><span style="font-size:18px; font-weight:900; color:#000; margin-top:12px; display:block;">${f['Tariff Price']} ${f['Currency']}</span></div>`;
         area.appendChild(card);
     });
 }
@@ -255,13 +243,10 @@ function openProductModal(code) {
     document.getElementById('pm-ean').innerText = "EAN: " + (f.EAN || '-');
     document.getElementById('pm-desc').innerText = f['Long Description'] || '';
     document.getElementById('pm-price').innerText = f['Tariff Price'] + " " + f['Currency'];
-    // FIX: Sizes Display Yan yana (Grid)
     document.getElementById('pm-sizes').innerHTML = g.map((item, idx) => `
         <div class="size-btn-row">
             <span style="font-weight:800; font-size:14px;">${item['EUR Size']} <br><small style="color:#888">Stok: ${item['Stock Quantity']}</small></span>
-            <input type="number" id="pm-qty-${idx}" class="pm-qty-inp" value="0" min="0" 
-                   onfocus="if(this.value=='0')this.value=''" 
-                   onblur="if(this.value=='')this.value='0'">
+            <input type="number" id="pm-qty-${idx}" class="pm-qty-inp" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
         </div>`).join('');
     document.getElementById('productModal').classList.add('open');
 }
@@ -275,7 +260,6 @@ function addToCartFromModal() {
     groupedResults[modalCode].forEach((item, idx) => {
         const q = parseInt(document.getElementById(`pm-qty-${idx}`).value);
         if(q > 0) { 
-            // Mevcut sepette varsa üzerine ekle
             let exist = cart.find(x => x.Product === item.Product && x['EUR Size'] === item['EUR Size']);
             if(exist) exist.qty += q;
             else cart.push({ ...item, qty: q, price: parseFloat(item['Tariff Price']), dealer: d }); 
@@ -286,8 +270,7 @@ function addToCartFromModal() {
         updateCartUI(); persistCart(); 
         document.getElementById('btnConfirmOrder').style.display='block';
         document.getElementById('postConfirmActions').style.display='none';
-        showToast(`✅ ${add} Ürün Eklendi`); 
-        _closeProductModal(); 
+        showToast(`✅ ${add} Ürün Eklendi`); _closeProductModal(); 
     }
 }
 
@@ -295,7 +278,6 @@ function updateCartUI() {
     const count = cart.reduce((a, b) => a + b.qty, 0);
     const total = cart.reduce((a, b) => a + (b.price * b.qty), 0);
     const totalStr = total.toFixed(2) + " " + (cart[0]?.Currency || "TL");
-    
     document.getElementById('cartTotal').innerText = totalStr;
     document.getElementById('st-qty').innerText = count;
     document.getElementById('st-total').innerText = totalStr;
@@ -308,7 +290,6 @@ function openCart() {
     else {
         const groups = {};
         cart.forEach(i => { const c = i.Product; if(!groups[c]) groups[c] = { name: i.Description, img: i.ImageURL, items: [], subTotal: 0, subQty: 0 }; groups[c].items.push(i); groups[c].subTotal += (i.price * i.qty); groups[c].subQty += i.qty; });
-        
         list.innerHTML = Object.keys(groups).map(c => `
             <div class="cart-group">
                 <div class="cart-group-header">
@@ -338,7 +319,6 @@ function changeCartQty(code, size, val, isManual = false) {
     if(!item) return;
     if(isManual) item.qty = Math.max(0, parseInt(val) || 0);
     else item.qty = Math.max(0, item.qty + val);
-    
     if(item.qty === 0) cart = cart.filter(x => x !== item);
     persistCart(); updateCartUI(); openCart();
 }
@@ -364,13 +344,28 @@ function saveAndExport() {
 }
 
 function sendMail() {
-    const btn = document.getElementById('btnMail'); btn.disabled = true;
-    let table = `<table border="1" style="border-collapse:collapse;width:100%;"><tr><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th></tr>`;
+    const btn = document.getElementById('btnMail');
+    const dealer = document.getElementById('dealerName').value;
+    if(!dealer) return showToast("⚠️ Bayi adı olmadan mail gönderilemez!");
+
+    btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
+
+    let table = `<table border="1" style="border-collapse:collapse;width:100%;font-family:Arial;"><tr style="background:#eee;"><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th></tr>`;
     cart.forEach(i => table += `<tr><td>${i.Product}</td><td>${i.Description}</td><td>${i['EUR Size']}</td><td>${i.qty}</td></tr>`);
     table += `</table>`;
-    emailjs.send(EMAILJS_SVC, EMAILJS_TMP, { manager: currentU.toUpperCase(), dealer: document.getElementById('dealerName').value, order_details: table }).then(() => {
-        showToast("✅ Sipariş Maili Atıldı!");
-    }).finally(()=> btn.disabled = false);
+
+    const templateParams = {
+        manager: USERS[currentU].name,
+        dealer: dealer,
+        order_details: table,
+        customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : "")
+    };
+
+    emailjs.send(EMAILJS_SVC, EMAILJS_TMP, templateParams).then(() => {
+        showToast("✅ Sipariş Maili Başarıyla Atıldı!");
+    }).catch((err) => {
+        alert("Mail Hatası! Hata: " + JSON.stringify(err));
+    }).finally(()=> { btn.disabled = false; btn.innerText = "MAİL AT"; });
 }
 
 function toggleCamera() {
