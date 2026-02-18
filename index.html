@@ -1344,8 +1344,27 @@ function downloadHistItem(id) {
 }
 
 // ═══════════════════════════════════════
-// 13b. OCR PHOTO SCANNER (OPTIMIZED: Center Crop)
+// 13b. OCR PHOTO SCANNER (GELİŞMİŞ VERSİYON)
 // ═══════════════════════════════════════
+
+// Yardımcı Fonksiyon: Görüntüyü Siyah-Beyaz Yap (Thresholding)
+// Bu işlem, OCR'ın harfleri arka plandan ayırt etmesini sağlar.
+function preprocessImage(canvas) {
+    var ctx = canvas.getContext('2d');
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var d = imageData.data;
+    // Basit bir eşikleme (threshold) algoritması
+    for (var i = 0; i < d.length; i += 4) {
+        var r = d[i];
+        var g = d[i+1];
+        var b = d[i+2];
+        // Parlaklık hesapla (Luma)
+        var v = (0.2126*r + 0.7152*g + 0.0722*b >= 100) ? 255 : 0; // Eşik değeri 100
+        d[i] = d[i+1] = d[i+2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
 function openOcrModal() {
     var modal = document.getElementById('ocrModal');
     var video = document.getElementById('ocrVideo');
@@ -1355,8 +1374,13 @@ function openOcrModal() {
     document.getElementById('ocrSnapBtn').innerHTML = '<i class="fas fa-camera"></i> Fotoğraf Çek';
     ocrText = '';
 
+    // Arka kamerayı (environment) en yüksek çözünürlükte açmaya çalış
     navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { 
+            facingMode: { ideal: 'environment' }, 
+            width: { ideal: 1920 }, // Daha yüksek çözünürlük talep et
+            height: { ideal: 1080 } 
+        }
     }).then(function (stream) {
         ocrStream = stream;
         video.srcObject = stream;
@@ -1385,26 +1409,32 @@ function ocrSnap() {
     var status = document.getElementById('ocrStatus');
     var btn    = document.getElementById('ocrSnapBtn');
 
-    // FIX: Only capture the center strip (Focus Box area)
+    // Video boyutlarını al
     var w = video.videoWidth;
     var h = video.videoHeight;
-    // We want a strip in the middle. Let's say ~15-20% height of the video.
-    // Ensure it matches visual aspect ratio roughly.
-    var cropHeight = Math.min(150, Math.floor(h * 0.25)); 
+    
+    // Sadece ortadaki kırmızı kutunun olduğu alanı kes (Focus Box)
+    // Kutunun yüksekliği yaklaşık ekranın %20-25'i kadar
+    var cropHeight = Math.min(200, Math.floor(h * 0.20)); 
     var sy = (h - cropHeight) / 2;
 
+    // Canvas boyutunu ayarla
     canvas.width  = w;
     canvas.height = cropHeight;
     var ctx = canvas.getContext('2d');
     
-    // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+    // 1. Resmi kesip canvas'a çiz
     ctx.drawImage(video, 0, sy, w, cropHeight, 0, 0, w, cropHeight);
 
+    // 2. Görüntü İşleme (Siyah-Beyaz yap)
+    preprocessImage(canvas);
+
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Okunuyor...';
-    status.innerText = '🔍 İşleniyor...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> İşleniyor...';
+    status.innerText = '🔍 Görüntü işleniyor...';
     document.getElementById('ocrResultBox').style.display = 'none';
 
+    // 3. Tesseract Çalıştır (Whitelist Eklendi)
     Tesseract.recognize(canvas, 'eng', {
         logger: function (m) {
             if (m.status === 'recognizing text') {
@@ -1413,32 +1443,38 @@ function ocrSnap() {
         }
     }).then(function (result) {
         var raw = result.data.text || '';
-        // Look for typical product codes (Alpha-numeric, uppercase)
-        // Clean garbage characters
+        
+        // Sadece BÜYÜK HARF ve RAKAMLARI filtrele
+        // Noktalama işaretlerini ve küçük harfleri çöpe at
         var clean = raw.replace(/[^A-Z0-9\s-]/g, ''); 
         
-        // Strategy: find the longest continuous string of chars
-        var parts = clean.split(/\s+/).filter(s => s.length > 3);
-        var best = parts.length > 0 ? parts[0] : clean.trim();
+        // En az 3 karakterli kelimeleri/kodları bul
+        var parts = clean.split(/\s+/).filter(s => s.length >= 3);
+        
+        // En uzun parçayı "kod" olarak kabul et (Genelde ürün kodları uzundur)
+        // Eğer EAN (sadece sayı) varsa öncelik ver
+        var best = parts.find(p => /^\d{8,13}$/.test(p)) || 
+                   parts.sort((a, b) => b.length - a.length)[0] || 
+                   clean.trim();
 
         if (!best || best.length < 3) {
-            status.innerText = '⚠️ Okunamadı.';
+            status.innerText = '⚠️ Kod algılanamadı. Işık yeterli mi?';
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
+            btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
             return;
         }
 
         ocrText = best;
         status.innerText = '';
-        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" ara';
+        document.getElementById('ocrResultBtn').innerText = '🔍 "' + best + '" ile Ara';
         document.getElementById('ocrResultBox').style.display = 'block';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar';
+        btn.innerHTML = '<i class="fas fa-redo"></i> Tekrar Dene';
     }).catch(function (err) {
         console.error('OCR error:', err);
-        status.innerText = '❌ Hata.';
+        status.innerText = '❌ Hata oluştu.';
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar';
+        btn.innerHTML = '<i class="fas fa-camera"></i> Tekrar Dene';
     });
 }
 
