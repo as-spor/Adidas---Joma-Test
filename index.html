@@ -18,1158 +18,381 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        :root { --primary: #000; --accent: #00AEEF; --bg: #f8f9fb; --radius: 18px; }
+        :root { --primary: #000; --accent: #00AEEF; --bg: #f8f9fb; --radius: 18px; --success: #2ecc71; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 140px; color: #1a1a1a; }
 
-        /* ── STATUS BAR ── */
-        #debugStatus {
-            background: #f39c12; color: #fff; padding: 10px;
-            text-align: center; font-weight: 700; font-size: 14px;
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
-            transition: background 0.5s;
-        }
+        #debugStatus { background: #f39c12; color: #fff; padding: 10px; text-align: center; font-weight: 700; font-size: 14px; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; }
 
-        /* ── LOGIN ── */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--primary); z-index: 5000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 20px; transition: opacity 0.3s;
-        }
-        .login-box {
-            background: #fff; width: 100%; max-width: 350px;
-            padding: 40px 30px; border-radius: 24px; text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-        .login-input {
-            width: 100%; padding: 15px; margin: 10px 0;
-            border: 2px solid #eee; border-radius: 12px;
-            outline: none; font-family: 'Inter'; font-size: 16px; transition: border-color 0.2s;
-        }
-        .login-input:focus { border-color: var(--accent); }
-        .login-btn {
-            width: 100%; background: var(--accent); color: #fff;
-            padding: 15px; border: none; border-radius: 12px;
-            font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px;
-        }
-        .error-msg {
-            color: #ff4d4d; font-size: 14px; font-weight: 600; margin-top: 15px;
-            display: none; padding: 10px; background: #fff0f0; border-radius: 8px;
-        }
+        #loginOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--primary); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .login-box { background: #fff; width: 100%; max-width: 350px; padding: 40px 30px; border-radius: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .login-input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; outline: none; font-family: 'Inter'; font-size: 16px; }
+        .login-btn { width: 100%; background: var(--accent); color: #fff; padding: 15px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; font-size: 16px; }
 
-        /* ── LAYOUT ── */
-        .header-hero {
-            background: var(--primary); color: #fff;
-            padding: 50px 20px 80px; border-bottom: 6px solid var(--accent);
-        }
+        .header-hero { background: var(--primary); color: #fff; padding: 50px 20px 80px; border-bottom: 6px solid var(--accent); }
         .main-container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        .user-welcome-bar {
-            background: #fff; padding: 15px 20px; border-radius: var(--radius);
-            margin-top: -50px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            display: flex; flex-wrap: wrap; align-items: center;
-            justify-content: space-between; gap: 10px;
-        }
+        .user-welcome-bar { background: #fff; padding: 15px 20px; border-radius: var(--radius); margin-top: -50px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; }
 
-        /* ── SEARCH ── */
-        .search-container {
-            background: #fff; padding: 8px; border-radius: var(--radius);
-            margin-top: 20px; display: flex; gap: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-        .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; font-family: 'Inter'; }
-        .btn-scan   { background: var(--primary); color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 18px; }
-        .btn-camera { background: var(--accent);  color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; font-size: 20px; }
+        .search-container { background: #fff; padding: 8px; border-radius: var(--radius); margin-top: 20px; display: flex; gap: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .search-field { flex: 1; border: none; padding-left: 15px; outline: none; font-size: 16px; }
+        .btn-scan { background: var(--primary); color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; }
+        .btn-camera { background: var(--accent); color: #fff; border: none; width: 55px; height: 50px; border-radius: 14px; cursor: pointer; }
 
-        /* ── SCANNER ── */
-        #reader-container {
-            width: 100%; margin-top: 15px; display: none;
-            background: #111; border-radius: 22px; overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-        }
-        .scanner-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #000; }
-        .scanner-header span { color: #fff; font-weight: 700; font-size: 14px; }
-        .scanner-mode-tabs { display: flex; gap: 6px; }
-        .mode-tab { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; background: #333; color: #aaa; transition: 0.2s; }
-        .mode-tab.active { background: var(--accent); color: #fff; }
-
-        #reader-viewport { position: relative; width: 100%; height: 220px; overflow: hidden; background: #000; }
+        #reader-container { width: 100%; margin-top: 15px; display: none; background: #111; border-radius: 22px; overflow: hidden; }
+        #reader-viewport { position: relative; width: 100%; height: 220px; background: #000; }
         #reader { width: 100% !important; height: 220px !important; }
-        #reader video { width: 100% !important; height: 220px !important; object-fit: cover; }
-        #reader__dashboard, #reader__status_span, #reader button,
-        #reader select, #reader__header_message, #reader__scan_region img { display: none !important; }
+        .scanner-laser { position: absolute; left: 10%; width: 80%; height: 2px; background: red; box-shadow: 0 0 8px red; z-index: 9; animation: laserSweep 1.6s infinite ease-in-out; }
+        @keyframes laserSweep { 0%,100%{top:40px} 50%{top:180px} }
 
-        .scanner-overlay-top, .scanner-overlay-bottom {
-            position: absolute; left: 0; width: 100%;
-            background: rgba(0,0,0,0.55); pointer-events: none; z-index: 5;
-        }
-        .scanner-overlay-top    { top: 0;    height: 72px; }
-        .scanner-overlay-bottom { bottom: 0; height: 72px; }
+        #resultsArea { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 25px; }
+        .product-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.07); border: 1.5px solid #eee; display: flex; flex-direction: column; cursor: pointer; }
+        .product-img { width: 100%; height: 220px; object-fit: contain; background: #fff; padding: 15px; border-bottom: 1px solid #f2f2f2; }
+        .product-info-wrapper { padding: 12px 14px; }
+        .product-code-label { font-size: 10px; color: var(--accent); font-weight: 800; text-transform: uppercase; }
+        .product-name-label { font-size: 14px; font-weight: 800; color: #000; margin-top: 4px; }
+        .product-ean-label { font-size: 10px; color: #bbb; font-weight: 600; margin-top: 2px; }
 
-        .scan-frame {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%,-50%);
-            width: 240px; height: 56px; z-index: 8; pointer-events: none;
-        }
-        .scan-frame::before, .scan-frame::after,
-        .scan-frame span::before, .scan-frame span::after {
-            content: ''; position: absolute; width: 18px; height: 18px;
-            border-color: var(--accent); border-style: solid;
-        }
-        .scan-frame::before      { top:0;    left:0;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-        .scan-frame::after       { top:0;    right:0; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
-        .scan-frame span::before { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
-        .scan-frame span::after  { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
-
-        .scanner-laser {
-            position: absolute; left: calc(50% - 120px); width: 240px; height: 2px;
-            background: linear-gradient(90deg, transparent, #f33, #f66, #f33, transparent);
-            box-shadow: 0 0 8px 1px rgba(255,50,50,0.7);
-            z-index: 9; pointer-events: none;
-            animation: laserSweep 1.6s infinite ease-in-out;
-        }
-        @keyframes laserSweep { 0%,100%{top:calc(50% - 28px)} 50%{top:calc(50% + 26px)} }
-
-        .scan-hint {
-            position: absolute; bottom: 8px; width: 100%;
-            text-align: center; color: rgba(255,255,255,0.75);
-            font-size: 11px; font-weight: 600; z-index: 9; pointer-events: none;
-        }
-
-        .ocr-controls { display: flex; border-top: 1px solid #222; }
-        .btn-ocr-trigger {
-            flex: 1; background: var(--accent); color: #fff; border: none;
-            padding: 15px 10px; font-weight: 800; cursor: pointer;
-            font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px;
-            display: none; align-items: center; justify-content: center; gap: 6px;
-        }
-        .btn-close-camera { flex: 1; background: #222; color: #ccc; border: none; padding: 15px 18px; font-weight: 700; cursor: pointer; font-size: 13px; }
-
-        /* ── PRODUCT CARDS — 3 per row, larger photo ── */
-        #resultsArea {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px; margin-top: 25px; padding-bottom: 20px;
-        }
-        @media(max-width: 600px) { #resultsArea { grid-template-columns: repeat(2,1fr); } }
-
-        .product-card {
-            background: #fff; border-radius: 16px; overflow: hidden;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.07); border: 1.5px solid #eee;
-            display: flex; flex-direction: column; cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-            animation: fadeUp 0.35s ease both;
-        }
-        .product-card:active { transform: scale(0.97); }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-
-        /* FIX: larger photo — not made smaller */
-        .product-img { width: 100%; height: 180px; object-fit: contain; background: #fafafa; padding: 10px; }
-        .product-no-img {
-            height: 180px; background: #f5f5f5;
-            display: flex; align-items: center; justify-content: center;
-            color: #ccc; font-size: 36px;
-        }
-        .product-info-wrapper { padding: 10px 12px 14px; flex-grow: 1; display: flex; flex-direction: column; }
-        .product-code-label { font-size: 10px; color: #bbb; font-weight: 700; letter-spacing: 0.4px; margin: 0; text-transform: uppercase; }
-        /* FIX: description now shows up to 2 lines */
-        .product-name-label {
-            font-size: 12px; font-weight: 700; color: #222; margin: 4px 0 0; line-height: 1.35;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
-        .price-tag { font-size: 14px; font-weight: 800; color: var(--accent); margin: 6px 0 0; display: block; }
-
-        /* ── PRODUCT DETAIL MODAL (bottom sheet) ── */
-        #productModal {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.72); z-index: 6500;
-            align-items: flex-end; justify-content: center;
-        }
+        #productModal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.72); z-index: 11000; align-items: flex-end; justify-content: center; }
         #productModal.open { display: flex; }
+        #productModalBox { background: #fff; width: 100%; max-width: 560px; border-radius: 28px 28px 0 0; padding-bottom: 40px; max-height: 92vh; overflow-y: auto; position: relative; }
+        .pm-qty-inp { width: 55px; text-align: center; border: 2px solid #eee; border-radius: 12px; height: 38px; font-weight: 700; outline: none; }
 
-        #productModalBox {
-            position: relative; background: #fff; width: 100%; max-width: 560px;
-            border-radius: 28px 28px 0 0; padding: 0 0 40px;
-            max-height: 92vh; overflow-y: auto;
-            animation: slideUp 0.26s ease;
-        }
-        @keyframes slideUp { from{transform:translateY(50px);opacity:0} to{transform:none;opacity:1} }
+        .cart-group { border: 1.5px solid #eee; border-radius: 18px; margin-bottom: 16px; overflow: hidden; background: #fff; }
+        .cart-group-header { background: #fcfcfc; padding: 14px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: center; }
+        .cart-thumb { width: 60px; height: 60px; border-radius: 10px; object-fit: contain; border: 1px solid #eee; background: #fff; }
 
-        /* FIX: full-width photo, not shrunk */
-        #productModalImg {
-            width: 100%; height: 260px; object-fit: contain;
-            background: #f5f5f5; border-radius: 28px 28px 0 0; padding: 20px; display: block;
-        }
-        .pm-close-btn {
-            position: absolute; top: 14px; right: 14px;
-            background: rgba(0,0,0,0.15); border: none; border-radius: 50%;
-            width: 36px; height: 36px; font-size: 20px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; color: #333; z-index: 1;
-        }
-        .pm-body { padding: 18px 20px 0; }
-        .pm-code  { font-size: 12px; color: #aaa; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .pm-name  { font-size: 20px; font-weight: 800; margin: 4px 0 2px; line-height: 1.25; }
-        .pm-ean   { font-size: 12px; color: #aaa; margin: 2px 0 10px; }
-        .pm-price { font-size: 26px; font-weight: 800; color: var(--accent); margin: 0 0 18px; }
-        .pm-sizes-title { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+        .floating-cart { position: fixed; bottom: 85px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 25px rgba(0,174,239,0.4); z-index: 9001; cursor: pointer; }
+        .cart-badge { position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: #fff; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; display: flex; justify-content: center; align-items: center; border: 2px solid #fff; font-weight: 800; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 12000; }
+        .modal-content { background: white; margin: 5% auto; width: 95%; max-width: 500px; padding: 25px; border-radius: 24px; max-height: 85vh; overflow-y: auto; }
 
-        .pm-size-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 0; border-bottom: 1px solid #f0f0f0;
-        }
-        .pm-size-left { display: flex; flex-direction: column; }
-        .pm-size-label { font-size: 15px; font-weight: 700; }
-        .pm-stock-label { font-size: 11px; color: #aaa; margin-top: 2px; }
-        .pm-qty-ctrl { display: flex; gap: 8px; align-items: center; }
-        .pm-btn-qty {
-            width: 36px; height: 36px; border-radius: 10px; border: none;
-            font-weight: 800; font-size: 20px; cursor: pointer; background: #f0f0f0;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .pm-qty-inp {
-            width: 50px; text-align: center; border: 1.5px solid #ddd;
-            border-radius: 10px; height: 36px; font-weight: 700; font-size: 15px;
-        }
-        .pm-add-btn {
-            width: 100%; background: #000; color: #fff; border: none;
-            padding: 17px; border-radius: 14px; margin-top: 20px;
-            font-weight: 800; font-size: 15px; cursor: pointer; letter-spacing: 0.5px;
-        }
-
-        /* ── GROUPED CART ── */
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 6000; }
-        .modal-content { background: #fff; margin: 5% auto; width: 95%; max-width: 560px; padding: 25px; border-radius: 24px; max-height: 85vh; overflow-y: auto; }
-
-        /* One group per product code */
-        .cart-group {
-            border: 1.5px solid #eee; border-radius: 16px;
-            margin-bottom: 14px; overflow: hidden;
-        }
-        .cart-group-header {
-            background: #f8f9fb; padding: 12px 16px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-        }
-        .cart-group-code { font-size: 13px; font-weight: 800; color: #000; }
-        .cart-group-desc { font-size: 11px; color: #888; margin-top: 2px; }
-        .cart-group-subtotal { font-size: 14px; font-weight: 800; color: var(--accent); white-space: nowrap; margin-left: 10px; }
-
-        .cart-size-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 16px; border-top: 1px solid #f2f2f2;
-        }
-        .cart-size-label { font-size: 14px; font-weight: 600; }
-        .cart-size-price { font-size: 11px; color: #aaa; margin-top: 2px; }
-        .cart-qty-ctrl { display: flex; gap: 6px; align-items: center; }
-        .cart-btn-qty {
-            width: 32px; height: 32px; border-radius: 9px; border: none;
-            font-weight: 800; font-size: 18px; cursor: pointer; background: #f0f0f0;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .cart-qty-val {
-            width: 42px; text-align: center; font-weight: 700; font-size: 14px;
-            border: 1.5px solid #ddd; border-radius: 9px; height: 32px;
-        }
-        .cart-remove-btn {
-            background: none; border: none; color: #ff4d4d;
-            font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
-        }
-
-        /* ── STICKY CART BAR ── */
-        #cartBar {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: #000; color: #fff;
-            display: none; align-items: center; justify-content: space-between;
-            padding: 14px 20px; z-index: 2000;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-        }
-        #cartBar.visible { display: flex; }
-        .cart-bar-left { display: flex; flex-direction: column; }
-        .cart-bar-count { font-size: 12px; color: #888; font-weight: 600; }
-        .cart-bar-total { font-size: 20px; font-weight: 800; color: var(--accent); line-height: 1.1; }
-        .cart-bar-btn {
-            background: var(--accent); color: #fff; border: none;
-            padding: 12px 22px; border-radius: 14px; font-weight: 800;
-            font-size: 14px; cursor: pointer; white-space: nowrap;
-        }
-
-        /* ── FLOATING CART ── */
-        .floating-cart {
-            position: fixed; bottom: 82px; right: 20px;
-            background: var(--accent); color: #fff; width: 56px; height: 56px;
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 8px 20px rgba(0,174,239,0.4); z-index: 2001; cursor: pointer;
-        }
-        .cart-badge {
-            position: absolute; top: -4px; right: -4px;
-            background: #ff4d4d; color: #fff; border-radius: 50%;
-            width: 22px; height: 22px; font-size: 11px;
-            display: flex; justify-content: center; align-items: center;
-            border: 2px solid #fff; font-weight: 800;
-        }
-
-        /* ── TOAST ── */
-        #toast {
-            visibility: hidden; min-width: 240px; background: #000; color: #fff;
-            text-align: center; border-radius: 12px; padding: 14px 20px;
-            position: fixed; z-index: 7000; left: 50%; bottom: 130px;
-            transform: translateX(-50%); font-weight: 600; font-size: 14px;
-        }
-        #toast.show { visibility: visible; animation: toastIn 0.3s ease, toastOut 0.3s 2.7s forwards; }
-        @keyframes toastIn  { from{opacity:0;bottom:100px} to{opacity:1;bottom:130px} }
-        @keyframes toastOut { to{opacity:0} }
+        /* ── YENİ: İŞ AKIŞI BUTONLARI ── */
+        .btn-confirm-order { width: 100%; background: var(--primary); color: #fff; border: none; padding: 18px; border-radius: 15px; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .post-confirm-actions { display: none; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .btn-new-order { width: 100%; background: #fff; color: #ff4d4d; border: 2px solid #ff4d4d; padding: 15px; border-radius: 12px; font-weight: 800; margin-top: 30px; cursor: pointer; }
+        
+        #toast { visibility: hidden; min-width: 250px; background: #000; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 20000; left: 50%; bottom: 120px; transform: translateX(-50%); font-weight: 600; }
+        #toast.show { visibility: visible; }
     </style>
 </head>
 <body>
 
 <div id="debugStatus">⏳ Veriler Yükleniyor...</div>
 
-<!-- LOGIN -->
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin:0;font-weight:800;">AS SPOR</h2>
         <p style="color:#666;font-size:13px;margin-bottom:20px;">Showroom Personel Girişi</p>
-        <input type="text"     id="loginUser" class="login-input" placeholder="Kullanıcı Adı"
-               autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-        <input type="password" id="loginPass" class="login-input" placeholder="Şifre"
-               autocomplete="current-password">
+        <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı" autocomplete="off">
+        <input type="password" id="loginPass" class="login-input" placeholder="Şifre">
         <button onclick="checkLogin()" class="login-btn">GİRİŞ YAP</button>
-        <div id="loginError" class="error-msg"></div>
+        <div id="loginError" style="color:red; display:none; margin-top:10px;"></div>
     </div>
 </div>
 
-<!-- HEADER -->
-<div class="header-hero">
-    <div class="main-container"><h1 style="margin:0;">AS SPOR</h1></div>
-</div>
+<div class="header-hero"><div class="main-container"><h1 style="margin:0;">AS SPOR</h1></div></div>
 
 <div class="main-container">
     <div class="user-welcome-bar">
         <div><b>Sorumlu:</b> <span id="displayUserName">-</span></div>
         <div style="display:flex;gap:10px;">
-            <button onclick="openHistory()"
-                style="background:#eee;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;">
-                <i class="fas fa-history"></i> Geçmiş
-            </button>
-            <button onclick="logout()"
-                style="color:red;border:none;background:none;cursor:pointer;font-weight:700;">ÇIKIŞ</button>
+            <button onclick="openHistory()" style="background:#eee;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:12px;">Geçmiş</button>
+            <button onclick="logout()" style="color:red;border:none;background:none;cursor:pointer;font-weight:700;">ÇIKIŞ</button>
         </div>
     </div>
 
-    <input type="text" id="dealerName" class="login-input"
-           style="margin-top:15px;background:#fff;" placeholder="Bayi Adı (Zorunlu)" autocomplete="off">
+    <input type="text" id="dealerName" class="login-input" style="margin-top:15px;background:#fff;" placeholder="Bayi Adı (Zorunlu)" oninput="persistDealer()">
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-field"
-               placeholder="Ürün Kodu Ara (Örn: BKLITW25)" autocomplete="off">
-        <button class="btn-scan"   onclick="searchProduct()"><i class="fas fa-search"></i></button>
+        <input type="text" id="searchInput" class="search-field" placeholder="Ürün Kodu veya İsim Ara...">
+        <button class="btn-scan" onclick="searchProduct()"><i class="fas fa-search"></i></button>
         <button class="btn-camera" onclick="toggleCamera()"><i class="fas fa-camera"></i></button>
     </div>
 
-    <!-- SCANNER -->
     <div id="reader-container">
-        <div class="scanner-header">
-            <span><i class="fas fa-camera" style="color:var(--accent);"></i>&nbsp; TARAYICI</span>
-            <div class="scanner-mode-tabs">
-                <button class="mode-tab active" id="tab-barcode" onclick="setMode('barcode')">
-                    <i class="fas fa-barcode"></i> Barkod
-                </button>
-                <button class="mode-tab" id="tab-ocr" onclick="setMode('ocr')">
-                    <i class="fas fa-font"></i> Yazı
-                </button>
-            </div>
-        </div>
-        <div id="reader-viewport">
-            <div id="reader"></div>
-            <div class="scanner-overlay-top"></div>
-            <div class="scanner-overlay-bottom"></div>
-            <div class="scan-frame"><span></span></div>
-            <div class="scanner-laser"></div>
-            <div class="scan-hint" id="scanHint">Barkodu çerçeveye hizalayın</div>
-        </div>
-        <div class="ocr-controls">
-            <button class="btn-ocr-trigger" id="btnOcrAction" onclick="captureOCR()">
-                <i class="fas fa-camera"></i> YAZIYI TARA
-            </button>
-            <button class="btn-close-camera" onclick="toggleCamera()">
-                <i class="fas fa-times"></i>&nbsp; KAPAT
-            </button>
-        </div>
+        <div id="reader-viewport"><div id="reader"></div><div class="scanner-laser"></div></div>
+        <button onclick="toggleCamera()" style="width:100%;background:#222;color:#ccc;border:none;padding:15px;font-weight:700;">KAPAT</button>
     </div>
 
     <div id="resultsArea"></div>
 </div>
 
-<!-- FLOATING CART -->
-<div class="floating-cart" onclick="openCart()">
-    <i class="fas fa-shopping-basket"></i>
-    <div id="cartBadge" class="cart-badge">0</div>
-</div>
+<div class="floating-cart" onclick="openCart()"><i class="fas fa-shopping-basket"></i><div id="cartBadge" class="cart-badge">0</div></div>
 
-<!-- CART MODAL -->
 <div id="cartModal" class="modal">
     <div class="modal-content">
-        <span onclick="closeModal('cartModal')"
-              style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
-        <h2 style="margin:0 0 4px;font-weight:800;">Sepetim</h2>
-        <p id="cartSummaryLine" style="margin:0 0 16px;color:#aaa;font-size:13px;"></p>
+        <span onclick="closeModal('cartModal')" style="float:right;cursor:pointer;font-size:28px;">&times;</span>
+        <h2 style="margin:0 0 15px;font-weight:800;">Sepetim</h2>
         <div id="cartItems"></div>
-        <div style="margin-top:18px;text-align:right;font-size:20px;font-weight:800;">
-            TOPLAM: <span id="cartTotal" style="color:var(--accent);">0.00</span>
-        </div>
-        <input type="email" id="customerEmail" class="login-input"
-               style="margin-top:18px;" placeholder="Müşteri Maili (Opsiyonel)">
-        <div style="display:flex;gap:12px;margin-top:16px;">
-            <button onclick="saveAndExport()"
-                style="flex:1;background:#2ecc71;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
-                EXCEL İNDİR
-            </button>
-            <button onclick="sendMail()" id="btnMail"
-                style="flex:1;background:#000;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;cursor:pointer;">
-                MAİL AT
-            </button>
+        <div style="margin-top:20px;text-align:right;font-size:22px;font-weight:800;">TOPLAM: <span id="cartTotal" style="color:var(--accent);">0.00</span></div>
+        
+        <button id="btnConfirmOrder" onclick="confirmAndLockOrder()" class="btn-confirm-order">SİPARİŞİ ONAYLA VE KAYDET</button>
+
+        <div id="postConfirmActions" class="post-confirm-actions">
+            <p style="color:var(--success); font-weight:700; text-align:center; font-size:13px; margin:5px 0;">✓ Sipariş Geçmişe Kaydedildi</p>
+            <input type="email" id="customerEmail" class="login-input" style="background:#f9f9f9" placeholder="Müşteri Maili (Opsiyonel)">
+            <div style="display:flex;gap:12px;">
+                <button onclick="saveAndExport()" style="flex:1;background:#2ecc71;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;">EXCEL</button>
+                <button onclick="sendMail()" id="btnMail" style="flex:1;background:#000;color:#fff;border:none;padding:15px;border-radius:12px;font-weight:800;">MAİL AT</button>
+            </div>
+            <button onclick="confirmClearCart()" class="btn-new-order">YENİ SATIŞA BAŞLA (SEPETİ TEMİZLE)</button>
         </div>
     </div>
 </div>
 
-<!-- HISTORY MODAL -->
-<div id="historyModal" class="modal">
-    <div class="modal-content">
-        <span onclick="closeModal('historyModal')"
-              style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
-        <h2 style="margin:0 0 16px;font-weight:800;">Sipariş Geçmişi</h2>
-        <div id="historyList"></div>
-    </div>
-</div>
+<div id="historyModal" class="modal"><div class="modal-content"><span onclick="closeModal('historyModal')" style="float:right;cursor:pointer;font-size:28px;">&times;</span><h2 style="font-weight:800;">Sipariş Geçmişi</h2><div id="historyList"></div></div></div>
 
-<!-- PRODUCT DETAIL MODAL -->
 <div id="productModal">
     <div id="productModalBox">
-        <button class="pm-close-btn" onclick="_closeProductModal()">&times;</button>
-        <img id="productModalImg" src="" alt="">
-        <div class="pm-body">
-            <div class="pm-code"  id="pm-code"></div>
-            <div class="pm-name"  id="pm-name"></div>
-            <div class="pm-ean"   id="pm-ean"></div>
-            <div class="pm-price" id="pm-price"></div>
-            <div class="pm-sizes-title">Beden Seçin &amp; Adet Girin</div>
+        <span onclick="_closeProductModal()" style="position:absolute;top:15px;right:20px;font-size:32px;cursor:pointer;z-index:10;">&times;</span>
+        <img id="productModalImg" src="" style="width:100%;height:280px;object-fit:contain;padding:20px;background:#fff">
+        <div style="padding:20px;">
+            <div id="pm-code" style="color:var(--accent);font-weight:800;font-size:12px;"></div>
+            <div id="pm-name" style="font-size:20px;font-weight:800;margin:4px 0;"></div>
+            <div id="pm-ean" style="font-size:11px;color:#bbb;font-weight:600;"></div>
+            <div id="pm-desc" style="font-size:13px;color:#666;margin:10px 0;line-height:1.4;"></div>
+            <div id="pm-price" style="font-size:26px;font-weight:800;color:var(--accent);margin-bottom:18px;"></div>
             <div id="pm-sizes"></div>
-            <button class="pm-add-btn" onclick="addToCartFromModal()">
-                <i class="fas fa-shopping-basket"></i>&nbsp; SEPETE EKLE
-            </button>
+            <button onclick="addToCartFromModal()" style="width:100%;background:#000;color:#fff;border:none;padding:18px;border-radius:15px;font-weight:800;margin-top:20px;">SEPETE EKLE</button>
         </div>
     </div>
-</div>
-
-<!-- STICKY CART BAR -->
-<div id="cartBar">
-    <div class="cart-bar-left">
-        <span class="cart-bar-count" id="cartBarCount"></span>
-        <span class="cart-bar-total" id="cartBarTotal"></span>
-    </div>
-    <button class="cart-bar-btn" onclick="openCart()">
-        <i class="fas fa-shopping-basket"></i>&nbsp; Sepeti Gör
-    </button>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════
-// 1. CONSTANTS
-// ═══════════════════════════════════
-const EMAILJS_SERVICE_ID  = "service_qh7mngr";
-const EMAILJS_TEMPLATE_ID = "template_2e5jxvh";
-const EMAILJS_PUBLIC_KEY  = "VSRTcl2JLxhmNWT4a";
-const FIXED_EMAILS        = "emel@asspor.com, siparis@asspor.com";
+const EMAILJS_SVC = "service_qh7mngr", EMAILJS_TMP = "template_2e5jxvh", EMAILJS_KEY = "VSRTcl2JLxhmNWT4a";
+const USERS = { "adnankaya": "1234", "cinargokce": "1234", "lutfuozturk": "1234", "meftunicay": "1234", "muratturgut": "1234", "ozkanocak": "1234", "serkanmert": "1234", "admin": "1234" };
 
-const USERS = {
-    "adnankaya":   { name: "Adnan Kaya",   pass: "1234" },
-    "cinargokce":  { name: "Çınar Gökçe",  pass: "1234" },
-    "lutfuozturk": { name: "Lütfü Öztürk", pass: "1234" },
-    "meftunicay":  { name: "Meftuni Çay",  pass: "1234" },
-    "muratturgut": { name: "Murat Turgut", pass: "1234" },
-    "ozkanocak":   { name: "Özkan Ocak",   pass: "1234" },
-    "serkanmert":  { name: "Serkan Mert",  pass: "1234" },
-    "admin":       { name: "Test Admin",   pass: "1234" }
-};
+let inventory = [], cart = [], groupedResults = {}, currentU = null, html5QrCode = null, modalCode = null;
+const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
 
-// ═══════════════════════════════════
-// 2. STATE — all declared once
-// ═══════════════════════════════════
-const beepSound     = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
-let html5QrCode     = null;
-let isCameraRunning = false;
-let scanMode        = 'barcode';
-let currentUser     = null;
-let inventory       = [];
-let cart            = [];          // flat list of {code, size, qty, price, ...}
-let groupedResults  = {};
-let modalCurrentCode = null;
+window.onload = function() {
+    emailjs.init(EMAILJS_KEY);
+    const saved = localStorage.getItem('as_active_user');
+    if(saved) loginSuccess(saved);
 
-// ═══════════════════════════════════
-// 3. INIT
-// ═══════════════════════════════════
-window.addEventListener('load', () => {
-    emailjs.init(EMAILJS_PUBLIC_KEY);
-
-    document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('loginPass').focus(); });
-    document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key==='Enter') checkLogin(); });
-    document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key==='Enter') searchProduct(); });
-
-    // FIX: backdrop click on productModal — attach to the overlay div itself
-    document.getElementById('productModal').addEventListener('click', function(e) {
-        if (e.target === this) _closeProductModal();
-    });
-
-    // Session restore with token validation
-    const savedUser  = localStorage.getItem('asSpor_user');
-    const savedToken = localStorage.getItem('asSpor_token');
-    if (savedUser && USERS[savedUser] && savedToken === _makeToken(savedUser, USERS[savedUser].pass)) {
-        loginSuccess(savedUser, false);
-    } else {
-        _clearSession();
-    }
-
-    loadInventory();
-});
-
-function _makeToken(u, p) { return btoa(encodeURIComponent(u + '\x00' + p)); }
-function _clearSession() {
-    localStorage.removeItem('asSpor_user');
-    localStorage.removeItem('asSpor_token');
-}
-
-// ═══════════════════════════════════
-// 4. DATA LOADING
-// ═══════════════════════════════════
-function loadInventory() {
-    const bar = document.getElementById('debugStatus');
     Papa.parse('data.csv', {
         download: true, header: true, delimiter: ";", skipEmptyLines: 'greedy',
-        complete: (r) => {
-            inventory = r.data.filter(row => row['Product'] || row['Reference']);
-            bar.style.background = '#27ae60';
-            bar.innerText = `✅ ${inventory.length.toLocaleString('tr-TR')} ürün yüklendi`;
-            setTimeout(() => { bar.style.display = 'none'; }, 3000);
-        },
-        error: (err) => {
-            bar.style.background = '#e74c3c';
-            bar.innerText = '❌ Veri yüklenemedi! data.csv kontrol edin.';
-            console.error('CSV error:', err);
-        }
+        complete: (r) => { inventory = r.data.filter(row => row['Product'] || row['Reference']); document.getElementById('debugStatus').style.display='none'; }
     });
-}
+};
 
-// ═══════════════════════════════════
-// 5. AUTH
-// ═══════════════════════════════════
 function checkLogin() {
-    const errEl = document.getElementById('loginError');
-    errEl.style.display = 'none';
-    const u = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s+/g,'');
+    const u = document.getElementById('loginUser').value.trim().toLowerCase();
     const p = document.getElementById('loginPass').value;
-
-    if (!u || !p) {
-        errEl.innerText = 'Kullanıcı adı ve şifre giriniz!';
-        errEl.style.display = 'block';
-        return;
-    }
-    if (USERS[u] && USERS[u].pass === p) {
-        localStorage.setItem('asSpor_user',  u);
-        localStorage.setItem('asSpor_token', _makeToken(u, p));
-        loginSuccess(u, true);
-    } else {
-        errEl.innerText = 'Kullanıcı adı veya şifre hatalı!';
-        errEl.style.display = 'block';
-        document.getElementById('loginPass').value = '';
-        document.getElementById('loginPass').focus();
-    }
+    if(USERS[u] && USERS[u] === p) { localStorage.setItem('as_active_user', u); loginSuccess(u); }
+    else { document.getElementById('loginError').style.display='block'; document.getElementById('loginError').innerText="Hatalı!"; }
 }
 
-function loginSuccess(key, animate) {
-    currentUser = USERS[key];
-    document.getElementById('displayUserName').innerText = currentUser.name;
-    const ov = document.getElementById('loginOverlay');
-    if (animate) { ov.style.opacity = '0'; setTimeout(() => ov.style.display = 'none', 300); }
-    else { ov.style.display = 'none'; }
+function loginSuccess(u) {
+    currentU = u;
+    document.getElementById('displayUserName').innerText = u.toUpperCase();
+    document.getElementById('loginOverlay').style.display='none';
+    const savedCart = localStorage.getItem('as_cart_' + u);
+    cart = savedCart ? JSON.parse(savedCart) : [];
+    const savedDealer = localStorage.getItem('as_dealer_' + u);
+    document.getElementById('dealerName').value = savedDealer || "";
+    updateCartUI();
 }
 
-function logout() {
-    _clearSession();
-    if (isCameraRunning && html5QrCode) {
-        html5QrCode.stop().catch(()=>{}).finally(() => location.reload());
-    } else {
-        location.reload();
-    }
-}
+function persistCart() { if(currentU) localStorage.setItem('as_cart_' + currentU, JSON.stringify(cart)); }
+function persistDealer() { if(currentU) localStorage.setItem('as_dealer_' + currentU, document.getElementById('dealerName').value); }
+function logout() { localStorage.removeItem('as_active_user'); location.reload(); }
 
-// ═══════════════════════════════════
-// 6. CAMERA — BARCODE + OCR
-// ═══════════════════════════════════
-window.setMode = function(mode) {
-    scanMode = mode;
-    document.getElementById('tab-barcode').classList.toggle('active', mode === 'barcode');
-    document.getElementById('tab-ocr').classList.toggle('active',     mode === 'ocr');
-    document.getElementById('btnOcrAction').style.display = mode === 'ocr' ? 'flex' : 'none';
-    document.getElementById('scanHint').innerText = mode === 'barcode'
-        ? 'Barkodu çerçeveye hizalayın'
-        : "Ürün kodunu çerçeveye hizalayın, sonra TARA'ya bas";
-};
-
-window.toggleCamera = async function() {
-    const container = document.getElementById('reader-container');
-    if (isCameraRunning && html5QrCode) {
-        try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) { console.warn(e); }
-        isCameraRunning = false;
-        container.style.display = 'none';
-        return;
-    }
-    container.style.display = 'block';
-    setMode('barcode');
-    html5QrCode = new Html5Qrcode("reader");
-
-    const config = {
-        fps: 20, qrbox: { width: 240, height: 52 }, aspectRatio: 16/9,
-        formatsToSupport: [
-            Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.QR_CODE,  Html5QrcodeSupportedFormats.DATA_MATRIX
-        ]
-    };
-
-    try {
-        await html5QrCode.start({ facingMode: "environment" }, config,
-            async (decodedText) => {
-                if (scanMode !== 'barcode') return;
-                beepSound.play().catch(()=>{});
-                document.getElementById('searchInput').value = decodedText;
-                searchProduct();
-                showToast("📸 Barkod: " + decodedText);
-                if (isCameraRunning) {
-                    try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {}
-                    isCameraRunning = false;
-                }
-                container.style.display = 'none';
-            },
-            () => {}
-        );
-        isCameraRunning = true;
-    } catch(err) {
-        showToast("Kamera açılamadı — lütfen izin verin.");
-        console.error('Camera error:', err);
-        container.style.display = 'none';
-    }
-};
-
-window.captureOCR = async function() {
-    const video = document.querySelector('#reader video');
-    if (!video || !isCameraRunning) return showToast("Kamera aktif değil!");
-    if (video.readyState < 2) return showToast("Kamera hazırlanıyor, bekleyin...");
-    const btn = document.getElementById('btnOcrAction');
-    btn.innerHTML = '⏳ Analiz...'; btn.disabled = true;
-    const vw = video.videoWidth, vh = video.videoHeight;
-    const stripH = Math.round(vh * 0.22);
-    const stripY = Math.round((vh - stripH) / 2);
-    const canvas = document.createElement('canvas');
-    canvas.width = vw; canvas.height = stripH;
-    canvas.getContext('2d').drawImage(video, 0, stripY, vw, stripH, 0, 0, vw, stripH);
-    try {
-        const result = await Tesseract.recognize(canvas, 'eng', {
-            tessedit_pageseg_mode: '8',
-            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        });
-        const cleaned = result.data.text.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-        if (cleaned.length >= 4) {
-            beepSound.play().catch(()=>{});
-            document.getElementById('searchInput').value = cleaned;
-            searchProduct();
-            showToast("📝 Algılanan: " + cleaned);
-            if (isCameraRunning) {
-                try { await html5QrCode.stop(); html5QrCode.clear(); } catch(e) {}
-                isCameraRunning = false;
-            }
-            document.getElementById('reader-container').style.display = 'none';
-        } else {
-            showToast("Okunamadı — kodu çerçeveye yaklaştır.");
-        }
-    } catch(e) {
-        showToast("OCR hatası — tekrar dene.");
-        console.error('OCR error:', e);
-    } finally {
-        btn.innerHTML = '<i class="fas fa-camera"></i> YAZIYI TARA';
-        btn.disabled = false;
-    }
-};
-
-// ═══════════════════════════════════
-// 7. HELPERS
-// ═══════════════════════════════════
-function escHtml(s) {
-    return String(s||'')
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════════
-// 8. SEARCH & PRODUCT CARDS
-// ═══════════════════════════════════
 function searchProduct() {
     const q = document.getElementById('searchInput').value.toUpperCase().trim();
-    if (!q) return;
-    if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi, bekleyin.");
-
-    const matches = inventory.filter(row =>
-        (row['Product']     || '').toUpperCase().includes(q) ||
-        (row['Description'] || '').toUpperCase().includes(q)
-    );
-    if (matches.length === 0) return showToast("Ürün bulunamadı: " + q);
-
-    // Group by product code
+    if(!q) return;
+    const matches = inventory.filter(i => (i.Product||"").toUpperCase().includes(q) || (i.Description||"").toUpperCase().includes(q));
+    if(matches.length === 0) return showToast("Bulunamadı!");
     groupedResults = {};
-    matches.forEach(item => {
-        const code = item['Product'] || item['Reference'] || '?';
-        if (!groupedResults[code]) groupedResults[code] = [];
-        groupedResults[code].push(item);
-    });
-
+    matches.forEach(item => { const c = item.Product || item.Reference; if(!groupedResults[c]) groupedResults[c] = []; groupedResults[c].push(item); });
     renderResults();
-    document.getElementById('searchInput').value = '';
-    setTimeout(() => {
-        document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
 }
 
 function renderResults() {
-    const area = document.getElementById('resultsArea');
-    area.innerHTML = '';
-
-    // FIX: cap at 4 unique product codes to avoid flooding screen
-    const codes = Object.keys(groupedResults).slice(0, 4);
-
-    codes.forEach((code, i) => {
-        const group = groupedResults[code];
-        const first = group[0];
-
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.style.animationDelay = (i * 0.05) + 's';
+    const area = document.getElementById('resultsArea'); area.innerHTML = "";
+    Object.keys(groupedResults).forEach(code => {
+        const g = groupedResults[code], f = g[0];
+        const card = document.createElement('div'); card.className = 'product-card';
         card.onclick = () => openProductModal(code);
-
-        // FIX: description shown correctly — try multiple common column names
-        const desc = first['Description'] || first['description'] || first['Desc'] || '';
-
         card.innerHTML = `
-            ${first.ImageURL
-                ? `<img src="${escHtml(first.ImageURL)}" class="product-img" onerror="this.style.display='none'" alt="">`
-                : `<div class="product-no-img"><i class="fas fa-tshirt"></i></div>`}
+            <img src="${f.ImageURL || ''}" class="product-img">
             <div class="product-info-wrapper">
-                <p class="product-code-label">${escHtml(code)}</p>
-                <p class="product-name-label">${escHtml(desc)}</p>
-                <span class="price-tag">${escHtml(first['Tariff Price']||'-')} ${escHtml(first['Currency']||'')}</span>
+                <p class="product-code-label">${code}</p>
+                <p class="product-name-label">${f.Description}</p>
+                <p style="font-size:10px; color:#bbb; margin-top:2px;">EAN: ${f.EAN || '-'}</p>
+                <span style="font-size:16px; font-weight:800; color:#000; margin-top:10px; display:block;">${f['Tariff Price']} ${f['Currency']}</span>
             </div>`;
         area.appendChild(card);
     });
 }
 
-// ═══════════════════════════════════
-// 9. PRODUCT DETAIL MODAL
-// ═══════════════════════════════════
-window.openProductModal = function(code) {
-    const group = groupedResults[code];
-    if (!group || !group.length) return;
-    const first = group[0];
-    modalCurrentCode = code;
-
-    // FIX: reset all qty inputs before opening — no leftover values from previous open
-    document.getElementById('pm-sizes').innerHTML = '';
-
-    const imgEl = document.getElementById('productModalImg');
-    if (first.ImageURL) { imgEl.src = first.ImageURL; imgEl.style.display = 'block'; }
-    else { imgEl.src = ''; imgEl.style.display = 'none'; }
-
-    const desc = first['Description'] || first['description'] || first['Desc'] || '';
-    document.getElementById('pm-code').innerText  = code;
-    document.getElementById('pm-name').innerText  = desc;
-
-    // EAN — try common column names
-    const ean = first['EAN'] || first['Ean'] || first['ean'] || first['Barcode'] || '';
-    document.getElementById('pm-ean').innerText  = ean ? 'EAN: ' + ean : '';
-    document.getElementById('pm-ean').style.display = ean ? 'block' : 'none';
-
-    document.getElementById('pm-price').innerText =
-        (first['Tariff Price'] || '-') + ' ' + (first['Currency'] || '');
-
-    // Build size rows — all reset to 0
-    document.getElementById('pm-sizes').innerHTML = group.map((item, idx) => {
-        const stock = parseInt(item['Stock Quantity']) || 0;
-        return `
-        <div class="pm-size-row">
-            <div class="pm-size-left">
-                <span class="pm-size-label">${escHtml(item['EUR Size'] || '-')}</span>
-                <span class="pm-stock-label">Stok: ${stock}</span>
-            </div>
-            <div class="pm-qty-ctrl">
-                <button class="pm-btn-qty" onclick="pmQty(${idx},-1)">−</button>
-                <input type="number" id="pm-qty-${idx}" class="pm-qty-inp"
-                       value="0" min="0" max="${stock || 999}">
-                <button class="pm-btn-qty" onclick="pmQty(${idx},1,${stock || 999})">+</button>
-            </div>
-        </div>`;
-    }).join('');
-
+function openProductModal(code) {
+    const g = groupedResults[code], f = g[0]; modalCode = code;
+    document.getElementById('productModalImg').src = f.ImageURL || '';
+    document.getElementById('pm-code').innerText = code;
+    document.getElementById('pm-name').innerText = f.Description;
+    document.getElementById('pm-ean').innerText = "Barkod / EAN: " + (f.EAN || '-');
+    document.getElementById('pm-desc').innerText = f['Long Description'] || '';
+    document.getElementById('pm-price').innerText = f['Tariff Price'] + " " + f['Currency'];
+    document.getElementById('pm-sizes').innerHTML = g.map((item, idx) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+            <span style="font-weight:700;">Beden: ${item['EUR Size']}</span>
+            <input type="number" id="pm-qty-${idx}" class="pm-qty-inp" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
+        </div>`).join('');
     document.getElementById('productModal').classList.add('open');
-    document.body.style.overflow = 'hidden';
-};
+}
 
-window.pmQty = function(idx, delta, max) {
-    const el = document.getElementById('pm-qty-' + idx);
-    if (!el) return;
-    let v = parseInt(el.value || 0) + delta;
-    v = Math.max(0, max !== undefined ? Math.min(v, max) : v);
-    el.value = v;
-};
+function _closeProductModal() { document.getElementById('productModal').classList.remove('open'); }
 
-// FIX: single reliable close function — called from button AND backdrop
-window._closeProductModal = function() {
-    document.getElementById('productModal').classList.remove('open');
-    document.body.style.overflow = '';
-    modalCurrentCode = null;
-};
-
-window.addToCartFromModal = function() {
-    const code = modalCurrentCode;
-    if (!code) return;
-    const dealer = document.getElementById('dealerName').value.trim();
-    if (!dealer) return showToast("Bayi adı giriniz!");
-
-    const group = groupedResults[code];
-    let added = 0;
-    group.forEach((item, idx) => {
-        const qEl = document.getElementById('pm-qty-' + idx);
-        const q = parseInt(qEl ? qEl.value : 0) || 0;
-        if (q > 0) {
-            // FIX: if same product+size already in cart, merge qty instead of duplicate entry
-            const existing = cart.find(c =>
-                c['Product'] === (item['Product'] || item['Reference']) &&
-                c['EUR Size'] === item['EUR Size']
-            );
-            if (existing) {
-                existing.qty += q;
-            } else {
-                cart.push({
-                    ...item,
-                    qty:   q,
-                    price: parseFloat(item['Tariff Price']) || 0,
-                    dealer
-                });
-            }
-            added += q;
-        }
+function addToCartFromModal() {
+    const d = document.getElementById('dealerName').value.trim();
+    if(!d) return showToast("⚠️ Bayi adı girin!");
+    let add = 0;
+    groupedResults[modalCode].forEach((item, idx) => {
+        const q = parseInt(document.getElementById(`pm-qty-${idx}`).value);
+        if(q > 0) { cart.push({ ...item, qty: q, price: parseFloat(item['Tariff Price']), dealer: d }); add += q; }
     });
-
-    if (added > 0) {
-        updateCartUI();
-        showToast(`✅ ${added} adet sepete eklendi.`);
-        _closeProductModal();
-    } else {
-        showToast("Lütfen en az bir beden için adet girin.");
+    if(add > 0) { 
+        updateCartUI(); 
+        persistCart(); 
+        resetOrderFlow(); // Sepet değiştiyse onay akışını sıfırla
+        showToast(`✅ ${add} Ürün Eklendi`); 
+        _closeProductModal(); 
     }
-};
+}
 
 // ═══════════════════════════════════
-// 10. CART UI — GROUPED BY PRODUCT
+// ── YENİ: SİPARİŞ AKIŞI LOJİĞİ ──
 // ═══════════════════════════════════
 
-// Stable key for a cart entry so we never rely on fragile array indices
-function cartKey(item) {
-    return (item['Product'] || item['Reference'] || '?') + '||' + (item['EUR Size'] || '');
+function resetOrderFlow() {
+    document.getElementById('btnConfirmOrder').style.display = 'block';
+    document.getElementById('postConfirmActions').style.display = 'none';
+}
+
+function confirmAndLockOrder() {
+    const d = document.getElementById('dealerName').value.trim();
+    if(!d) return showToast("⚠️ Önce Bayi Adı Giriniz!");
+    if(cart.length === 0) return showToast("⚠️ Sepet Boş!");
+
+    // Geçmişe Kaydet (Betonlama)
+    let h = JSON.parse(localStorage.getItem('as_history_' + currentU)) || [];
+    h.unshift({ id: Date.now(), date: new Date().toLocaleString(), dealer: d, items: [...cart] });
+    localStorage.setItem('as_history_' + currentU, JSON.stringify(h.slice(0, 50)));
+
+    // Butonları Değiştir
+    document.getElementById('btnConfirmOrder').style.display = 'none';
+    document.getElementById('postConfirmActions').style.display = 'flex';
+    showToast("✓ Sipariş Onaylandı ve Kaydedildi.");
+}
+
+function confirmClearCart() {
+    if(confirm("DİKKAT: Mevcut sepet temizlenecek. Yeni bir müşteriye mi geçiyorsunuz?")) {
+        cart = []; persistCart(); updateCartUI(); 
+        resetOrderFlow();
+        closeModal('cartModal');
+        showToast("🗑️ Sepet Temizlendi.");
+    }
 }
 
 function updateCartUI() {
-    const totalQty  = cart.reduce((s, i) => s + i.qty, 0);
-    const total     = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const currency  = (cart[0] && cart[0]['Currency']) || 'TL';
-    const totalStr  = total.toFixed(2) + ' ' + currency;
-    const itemCount = cart.length;
-
-    document.getElementById('cartBadge').innerText = itemCount;
-    document.getElementById('cartTotal').innerText = totalStr;
-    document.getElementById('cartSummaryLine').innerText =
-        itemCount > 0 ? `${totalQty} adet · ${itemCount} kalem` : '';
-
-    const bar = document.getElementById('cartBar');
-    if (itemCount > 0) {
-        bar.classList.add('visible');
-        document.getElementById('cartBarCount').innerText = `${totalQty} adet · ${itemCount} kalem`;
-        document.getElementById('cartBarTotal').innerText = totalStr;
-    } else {
-        bar.classList.remove('visible');
-    }
-
-    // If cart modal is open, re-render it in place (without opening/closing)
-    if (document.getElementById('cartModal').style.display === 'block') {
-        _renderCartItems();
-    }
+    document.getElementById('cartBadge').innerText = cart.length;
+    const total = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+    document.getElementById('cartTotal').innerText = total.toFixed(2) + " TL";
 }
 
-function _renderCartItems() {
+function openCart() {
     const list = document.getElementById('cartItems');
-
-    if (cart.length === 0) {
-        list.innerHTML = '<p style="text-align:center;color:#bbb;padding:30px 0;">Sepetiniz boş.</p>';
-        // update totals
-        document.getElementById('cartTotal').innerText = '0.00 TL';
-        document.getElementById('cartSummaryLine').innerText = '';
-        return;
+    if(cart.length === 0) { 
+        list.innerHTML = "<p style='text-align:center;padding:20px;color:#888;'>Sepetiniz boş.</p>"; 
+        resetOrderFlow();
+    } else {
+        const groups = {};
+        cart.forEach(i => { const c = i.Product || i.Reference; if(!groups[c]) groups[c] = { name: i.Description, img: i.ImageURL, items: [] }; groups[c].items.push(i); });
+        list.innerHTML = Object.keys(groups).map(c => `
+            <div class="cart-group">
+                <div class="cart-group-header">
+                    <img src="${groups[c].img || ''}" class="cart-thumb" onerror="this.src='https://via.placeholder.com/60'">
+                    <div><div style="font-size:11px;font-weight:800;color:var(--accent);">${c}</div><div style="font-weight:700;font-size:14px;">${groups[c].name}</div></div>
+                </div>
+                ${groups[c].items.map(it => `
+                    <div style="display:flex;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #f9f9f9;align-items:center;">
+                        <span style="font-size:13px;font-weight:600;">Beden: ${it['EUR Size']} - ${it.qty} Adet</span>
+                        <i class="fas fa-trash" onclick="removeFromCart(${cart.indexOf(it)})" style="color:#ff4d4d;padding:5px;"></i>
+                    </div>`).join('')}
+            </div>`).join('');
     }
-
-    // Group by product code — maintain insertion order
-    const groups = {};
-    const groupOrder = [];
-    cart.forEach(item => {
-        const code = item['Product'] || item['Reference'] || '?';
-        if (!groups[code]) {
-            groups[code] = {
-                desc:  item['Description'] || item['Desc'] || '',
-                items: []
-            };
-            groupOrder.push(code);
-        }
-        groups[code].items.push(item);
-    });
-
-    list.innerHTML = groupOrder.map(code => {
-        const g = groups[code];
-        const currency = (g.items[0] && g.items[0]['Currency']) || 'TL';
-        const subtotal  = g.items.reduce((s, i) => s + i.price * i.qty, 0);
-
-        const sizeRows = g.items.map(item => {
-            const key = cartKey(item);
-            // Encode key safely for use in HTML attribute
-            const safeKey = encodeURIComponent(key);
-            return `
-            <div class="cart-size-row">
-                <div>
-                    <div class="cart-size-label">Beden ${escHtml(item['EUR Size'] || '-')}</div>
-                    <div class="cart-size-price">
-                        ${item.price.toFixed(2)} ${escHtml(currency)} × ${item.qty}
-                        = <b>${(item.price * item.qty).toFixed(2)} ${escHtml(currency)}</b>
-                    </div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div class="cart-qty-ctrl">
-                        <button class="cart-btn-qty" onclick="cartChangeQty('${safeKey}',-1)">−</button>
-                        <input type="number" class="cart-qty-val"
-                               value="${item.qty}" min="1"
-                               onchange="cartSetQty('${safeKey}', this.value)"
-                               style="width:46px;">
-                        <button class="cart-btn-qty" onclick="cartChangeQty('${safeKey}',1)">+</button>
-                    </div>
-                    <button class="cart-remove-btn" onclick="removeFromCart('${safeKey}')">&times;</button>
-                </div>
-            </div>`;
-        }).join('');
-
-        return `
-        <div class="cart-group">
-            <div class="cart-group-header">
-                <div>
-                    <div class="cart-group-code">${escHtml(code)}</div>
-                    <div class="cart-group-desc">${escHtml(g.desc)}</div>
-                </div>
-                <div class="cart-group-subtotal">${subtotal.toFixed(2)} ${escHtml(currency)}</div>
-            </div>
-            ${sizeRows}
-        </div>`;
-    }).join('');
+    document.getElementById('cartModal').style.display='block';
 }
 
-window.openCart = () => {
-    _renderCartItems();
-    document.getElementById('cartModal').style.display = 'block';
-};
+function removeFromCart(i) { 
+    cart.splice(i, 1); 
+    persistCart(); 
+    updateCartUI(); 
+    openCart(); 
+    resetOrderFlow(); // Ürün silindiyse tekrar onay gerekebilir
+}
 
-// Use stable key (product+size) — never fragile array index
-window.cartChangeQty = (encodedKey, delta) => {
-    const key = decodeURIComponent(encodedKey);
-    const item = cart.find(c => cartKey(c) === key);
-    if (!item) return;
-    item.qty = Math.max(1, item.qty + delta);
-    updateCartUI();
-};
-
-window.cartSetQty = (encodedKey, val) => {
-    const key = decodeURIComponent(encodedKey);
-    const item = cart.find(c => cartKey(c) === key);
-    if (!item) return;
-    const q = Math.max(1, parseInt(val) || 1);
-    item.qty = q;
-    updateCartUI();
-};
-
-window.removeFromCart = (encodedKey) => {
-    const key = decodeURIComponent(encodedKey);
-    const idx = cart.findIndex(c => cartKey(c) === key);
-    if (idx === -1) return;
-    cart.splice(idx, 1);
-    updateCartUI();
-};
-
-window.closeModal = (id) => {
-    if (id === 'productModal') { _closeProductModal(); return; }
-    document.getElementById(id).style.display = 'none';
-};
-window.closeCart = () => closeModal('cartModal');
-
-// ═══════════════════════════════════
-// 11. EXCEL EXPORT
-// ═══════════════════════════════════
 function saveAndExport() {
-    if (cart.length === 0) return showToast("Sepet boş!");
-    const dealer = document.getElementById('dealerName').value.trim() || 'siparis';
-    saveToHistory(cart, dealer);
-    const rows = cart.map(i => ({
-        'Ürün Kodu':   i['Product']     || '',
-        'Açıklama':    i['Description'] || i['Desc'] || '',
-        'Beden':       i['EUR Size']    || '',
-        'Adet':        i.qty,
-        'Birim Fiyat': i.price,
-        'Toplam':      (i.price * i.qty).toFixed(2),
-        'Para Birimi': i['Currency']    || '',
-        'Bayi':        i.dealer         || ''
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const d = document.getElementById('dealerName').value;
+    const ws = XLSX.utils.json_to_sheet(cart);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Siparis");
-    XLSX.writeFile(wb, `Siparis_${dealer}_${new Date().toISOString().slice(0,10)}.xlsx`);
-    showToast("✅ Excel indirildi.");
+    XLSX.writeFile(wb, `Siparis_${d}.xlsx`);
 }
 
-// ═══════════════════════════════════
-// 12. EMAIL
-// ═══════════════════════════════════
 function sendMail() {
-    if (cart.length === 0) return showToast("Sepet boş!");
-    const dealer = document.getElementById('dealerName').value.trim();
-    if (!dealer) return showToast("Bayi adı giriniz!");
-
-    const btn = document.getElementById('btnMail');
-    btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
-
-    // Group for email table too
-    const groups = {};
-    cart.forEach(i => {
-        const code = i['Product'] || '?';
-        if (!groups[code]) groups[code] = { desc: i['Description']||'', items:[] };
-        groups[code].items.push(i);
-    });
-
-    let table = `<table border="1" cellpadding="8" style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:13px;">
-        <tr style="background:#000;color:#fff;">
-            <th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th><th>Tutar</th>
-        </tr>`;
-    Object.entries(groups).forEach(([code, g]) => {
-        g.items.forEach((i, ii) => {
-            table += `<tr${ii===0?' style="background:#f9f9f9;"':''}>
-                ${ii===0 ? `<td rowspan="${g.items.length}" style="font-weight:700;vertical-align:top;">${escHtml(code)}</td>
-                            <td rowspan="${g.items.length}" style="vertical-align:top;">${escHtml(g.desc)}</td>` : ''}
-                <td>${escHtml(i['EUR Size'])}</td>
-                <td>${i.qty}</td>
-                <td>${(i.price*i.qty).toFixed(2)} ${escHtml(i['Currency']||'')}</td>
-            </tr>`;
-        });
-    });
-    table += `<tr style="background:#000;color:#fff;font-weight:800;">
-        <td colspan="3">TOPLAM</td>
-        <td>${cart.reduce((s,i)=>s+i.qty,0)}</td>
-        <td>${cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2)} ${(cart[0]&&cart[0]['Currency'])||'TL'}</td>
-    </tr></table>`;
-
-    const extra = document.getElementById('customerEmail').value.trim();
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        manager:        currentUser.name,
-        dealer,
-        customer_email: FIXED_EMAILS + (extra ? ', '+extra : ''),
-        order_details:  table,
-        total_qty:      cart.reduce((s,i)=>s+i.qty,0)
-    })
-    .then(() => {
-        saveToHistory(cart, dealer);
-        showToast("✅ Mail gönderildi!");
-        cart = []; updateCartUI(); closeCart();
-        document.getElementById('customerEmail').value = '';
-    })
-    .catch(err => {
-        console.error('EmailJS:', err);
-        showToast("❌ Mail gönderilemedi.");
-    })
-    .finally(() => { btn.disabled = false; btn.innerText = "MAİL AT"; });
+    const btn = document.getElementById('btnMail'); btn.disabled = true; btn.innerText = "GÖNDERİLİYOR...";
+    let table = `<table border="1" style="width:100%;border-collapse:collapse;"><tr><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th></tr>`;
+    cart.forEach(i => table += `<tr><td>${i.Product}</td><td>${i.Description}</td><td>${i['EUR Size']}</td><td>${i.qty}</td></tr>`);
+    table += `</table>`;
+    
+    emailjs.send(EMAILJS_SVC, EMAILJS_TMP, { 
+        manager: currentU.toUpperCase(), 
+        dealer: document.getElementById('dealerName').value, 
+        order_details: table,
+        customer_email: FIXED_EMAILS + (document.getElementById('customerEmail').value ? ", " + document.getElementById('customerEmail').value : "")
+    }).then(() => {
+        showToast("✅ Mail Gönderildi!"); 
+    }).finally(()=> { btn.disabled = false; btn.innerText = "MAİL AT"; });
 }
 
-// ═══════════════════════════════════
-// 13. HISTORY
-// ═══════════════════════════════════
-function saveToHistory(items, dealer) {
-    try {
-        let h = JSON.parse(localStorage.getItem('asSpor_history') || '[]');
-        h.unshift({ id: Date.now(), date: new Date().toLocaleString('tr-TR'), dealer, items });
-        localStorage.setItem('asSpor_history', JSON.stringify(h.slice(0,50)));
-    } catch(e) { console.warn('History save failed:', e); }
-}
-
-window.openHistory = () => {
-    let h = [];
-    try { h = JSON.parse(localStorage.getItem('asSpor_history') || '[]'); } catch(e) {}
+function openHistory() {
     const list = document.getElementById('historyList');
-    list.innerHTML = h.length
-        ? h.map(o => `
-            <div style="padding:12px;background:#f9f9f9;border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-                <div>
-                    <b>${escHtml(o.dealer)}</b><br>
-                    <small style="color:#aaa;">${o.date} · ${o.items.length} kalem</small>
-                </div>
-                <button onclick="downloadHistItem(${o.id})"
-                    style="background:#2ecc71;border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:700;white-space:nowrap;flex-shrink:0;">
-                    Excel
-                </button>
-            </div>`).join('')
-        : '<p style="color:#bbb;text-align:center;padding:20px;">Geçmiş yok.</p>';
+    const h = JSON.parse(localStorage.getItem('as_history_' + currentU)) || [];
+    list.innerHTML = h.length ? h.map(o => `
+        <div style="padding:15px; background:#f9f9f9; border-radius:15px; margin-bottom:10px; border-left:4px solid var(--accent);">
+            <div style="font-weight:800;">${o.dealer}</div>
+            <div style="font-size:12px;color:#888;">${o.date}</div>
+            <div style="font-size:12px;margin-top:5px;">${o.items.length} Kalem Ürün</div>
+            <button onclick="downloadHist(${o.id})" style="margin-top:10px;background:var(--success);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;">Excel İndir</button>
+        </div>`).join('') : "<p style='text-align:center;padding:20px;color:#aaa;'>Henüz geçmiş sipariş yok.</p>";
     document.getElementById('historyModal').style.display = 'block';
-};
+}
 
-window.downloadHistItem = (id) => {
-    try {
-        const h   = JSON.parse(localStorage.getItem('asSpor_history') || '[]');
-        const rec = h.find(o => o.id === id);
-        if (!rec) return showToast("Kayıt bulunamadı.");
-        const rows = rec.items.map(i => ({
-            'Ürün Kodu':   i['Product']     || '',
-            'Açıklama':    i['Description'] || i['Desc'] || '',
-            'Beden':       i['EUR Size']    || '',
-            'Adet':        i.qty,
-            'Birim Fiyat': i.price,
-            'Toplam':      (i.price*i.qty).toFixed(2),
-            'Para Birimi': i['Currency']    || '',
-            'Bayi':        i.dealer         || ''
-        }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Siparis");
-        XLSX.writeFile(wb, `Gecmis_${rec.dealer}_${rec.id}.xlsx`);
-    } catch(e) { showToast("İndirme hatası."); }
-};
+function downloadHist(id) {
+    const h = JSON.parse(localStorage.getItem('as_history_' + currentU)) || [];
+    const o = h.find(x => x.id === id);
+    const ws = XLSX.utils.json_to_sheet(o.items);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Siparis");
+    XLSX.writeFile(wb, `Gecmis_${o.dealer}.xlsx`);
+}
 
-// ═══════════════════════════════════
-// 14. TOAST
-// ═══════════════════════════════════
-window.showToast = (msg) => {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.className = '';
-    void t.offsetWidth; // restart animation
-    t.className = 'show';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.className = ''; }, 3000);
-};
+function toggleCamera() {
+    const container = document.getElementById('reader-container');
+    if(html5QrCode) { html5QrCode.stop(); html5QrCode = null; container.style.display='none'; return; }
+    container.style.display='block';
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 250, height: 100 } }, (txt) => {
+        beep.play().catch(()=>{}); document.getElementById('searchInput').value = txt; searchProduct(); toggleCamera();
+    });
+}
+
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+function showToast(m) { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => t.className = "", 3000); }
 </script>
 </body>
 </html>
