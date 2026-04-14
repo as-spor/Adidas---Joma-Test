@@ -473,9 +473,19 @@
         </div>
     </div>
 
-    <input type="text" id="dealerName" class="login-input"
-           style="margin-top:15px;background:#fff;" placeholder="Bayi Adı (Zorunlu)"
-           oninput="persistDealer()" autocomplete="off">
+    <div style="display: flex; gap: 10px; align-items: center; margin-top: 15px;">
+        <div style="flex: 1; position: relative;">
+            <input type="text" id="dealerName" class="login-input" list="dealerList"
+                   style="margin: 0; background: #fff; width: 100%;" 
+                   placeholder="Bayi Adı Seçin veya Yazın (Zorunlu)"
+                   oninput="persistDealer()" autocomplete="off">
+            <datalist id="dealerList"></datalist>
+        </div>
+        <button onclick="openNewDealerModal()" 
+                style="background: var(--accent); color: #fff; border: none; padding: 0 15px; border-radius: 12px; font-weight: 800; cursor: pointer; height: 54px; flex-shrink: 0; display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-plus"></i> Yeni Bayi
+        </button>
+    </div>
 
     <div id="importBanner">
         <div class="import-banner-text" id="importBannerText">📦 Başka cihazdan sepet bulundu</div>
@@ -557,6 +567,17 @@
               style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
         <h2 style="font-weight:800;margin:0 0 16px;">Sipariş Geçmişi</h2>
         <div id="historyList"></div>
+    </div>
+</div>
+
+<div id="newDealerModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <span onclick="closeModal('newDealerModal')" style="float:right;cursor:pointer;font-size:28px;line-height:1;">&times;</span>
+        <h2 style="margin:0 0 15px; font-weight:800; text-align:left;">Yeni Bayi Ekle</h2>
+        <input type="text" id="newDealerInput" class="login-input" placeholder="Bayi Adını Girin..." autocomplete="off">
+        <button onclick="saveNewDealer()" style="width:100%; background:var(--accent); color:#fff; border:none; padding:15px; border-radius:12px; font-weight:800; cursor:pointer; margin-top:15px;">
+            KAYDET VE SEÇ
+        </button>
     </div>
 </div>
 
@@ -685,6 +706,7 @@ window.addEventListener('load', function () {
     }
 
     loadInventory();
+    loadDealersFromCSV(); // Bayileri Çek Fonksiyonu Eklendi
     _checkSharedCartUrl();
 });
 
@@ -714,6 +736,74 @@ function loadInventory() {
             console.error('CSV error:', err);
         }
     });
+}
+
+// ═══════════════════════════════════════
+// BAYİ ÇEKME & YENİ BAYİ İŞLEMLERİ (EKLENEN KISIM)
+// ═══════════════════════════════════════
+function loadDealersFromCSV() {
+    // CardCustomer.csv dosyanızın aynı klasörde olması gerekir
+    Papa.parse("CardCustomer.csv", {
+        download: true,
+        header: false, // Sütun isimleri üzerinden değil indis üzerinden (0=A, 1=B vb.) alıyoruz
+        skipEmptyLines: true,
+        complete: function(results) {
+            var datalist = document.getElementById('dealerList');
+            datalist.innerHTML = ''; 
+            
+            results.data.forEach(function(row, index) {
+                // Başlık satırını atla (Örn: A sütununda Sorumlusu kelimesi geçiyorsa)
+                if(index === 0 && row[0] && row[0].includes("Sorumlusu")) return;
+
+                var rep = row[0] ? row[0].trim() : "";
+                var code = row[1] ? row[1].trim() : "";
+                var company = row[2] ? row[2].trim() : "";
+                var status = row[3] ? row[3].trim() : "";
+                
+                if(company) {
+                    var displayName = rep + ' - ' + code + ' - ' + company;
+                    if(status) {
+                        displayName += ' - (' + status + ')';
+                    }
+                    var option = document.createElement('option');
+                    option.value = displayName;
+                    datalist.appendChild(option);
+                }
+            });
+        },
+        error: function(err) {
+            console.error("CardCustomer.csv okunamadı. Lütfen dosya ismini kontrol edin.", err);
+        }
+    });
+}
+
+function openNewDealerModal() {
+    var modal = document.getElementById('newDealerModal');
+    modal.style.display = 'block'; 
+    document.getElementById('newDealerInput').value = '';
+    setTimeout(function() { document.getElementById('newDealerInput').focus(); }, 100);
+}
+
+function saveNewDealer() {
+    var newName = document.getElementById('newDealerInput').value.trim();
+    if(!newName) {
+        showToast("Lütfen bayi adı girin!");
+        return;
+    }
+    
+    var formattedName = "MANUEL - YENİ - " + newName.toUpperCase();
+    
+    var datalist = document.getElementById('dealerList');
+    var option = document.createElement('option');
+    option.value = formattedName;
+    datalist.appendChild(option);
+    
+    var dealerInput = document.getElementById('dealerName');
+    dealerInput.value = formattedName;
+    persistDealer(); 
+    
+    closeModal('newDealerModal');
+    showToast("✅ Yeni bayi eklendi ve seçildi.");
 }
 
 // ═══════════════════════════════════════
