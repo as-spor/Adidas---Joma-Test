@@ -73,6 +73,14 @@
             flex-wrap: wrap; gap: 8px;
         }
 
+        /* Marka Seçici Stili */
+        #activeBrandSelect {
+            margin-left: 10px; padding: 6px 12px; border-radius: 8px;
+            font-weight: 800; font-family: 'Inter'; border: 2px solid #eee;
+            background-color: #f8f9fb; cursor: pointer; outline: none;
+            color: var(--accent);
+        }
+
         .search-container {
             background: #fff; padding: 8px; border-radius: var(--radius);
             margin-top: 20px; display: flex; gap: 10px;
@@ -171,7 +179,7 @@
         .pm-name  { font-size: 22px; font-weight: 800; margin: 4px 0 2px; }
         .pm-ean   { font-size: 12px; color: #aaa; margin-bottom: 4px; }
         .pm-desc  { font-size: 14px; color: #666; margin: 8px 0 12px; line-height: 1.5; }
-        .pm-price { font-size: 28px; font-weight: 900; color: #000; margin-bottom: 20px; }
+        .pm-price { margin-bottom: 20px; }
         .pm-sizes-title {
             font-size: 12px; font-weight: 700; color: #888;
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
@@ -400,11 +408,6 @@
         <h2 style="margin:0;font-weight:800;">AS SPOR</h2>
         <p style="color:#666;font-size:13px;margin-bottom:20px;">Showroom Personel Girişi</p>
         
-        <select id="loginBrand" class="login-input" style="font-weight: 800; cursor: pointer; text-align-last: center; appearance: auto; background-color: #f8f9fb;">
-            <option value="data.csv">JOMA</option>
-            <option value="adidas.csv">ADİDAS</option>
-        </select>
-
         <input type="text" id="loginUser" class="login-input" placeholder="Kullanıcı Adı"
                autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
         <input type="password" id="loginPass" class="login-input" placeholder="Şifre"
@@ -422,9 +425,16 @@
 
 <div class="main-container">
     <div class="user-welcome-bar">
-        <div><b>Sorumlu:</b> <span id="displayUserName">-</span></div>
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div style="display: flex; align-items: center;">
+            <b>Sorumlu:</b> <span id="displayUserName" style="margin-left: 5px;">-</span>
             
+            <select id="activeBrandSelect" onchange="changeBrand()" title="Marka Seçimi">
+                <option value="data.csv">JOMA</option>
+                <option value="adidas.csv">ADİDAS</option>
+            </select>
+
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
             <button onclick="openDashboard()" title="Satış Raporları"
                 style="background:#e3f2fd;color:#1565c0;border:none;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px;">
                 <i class="fas fa-chart-pie"></i> Raporlar
@@ -666,13 +676,17 @@ window.addEventListener('load', function () {
     var savedUser  = localStorage.getItem('as_active_user');
     var savedToken = localStorage.getItem('as_token');
     
-    // Uygulama yüklendiğinde bayi listesini çek
+    // Hafızadaki markayı alıp menüde onu seçili yap
+    var savedBrand = localStorage.getItem('as_active_brand') || 'data.csv';
+    var brandDropdown = document.getElementById('activeBrandSelect');
+    if(brandDropdown) brandDropdown.value = savedBrand;
+    
     loadDealersFromCSV();
 
     if (savedUser && USERS[savedUser] &&
         savedToken === _makeToken(savedUser, USERS[savedUser].pass)) {
         loginSuccess(savedUser);
-        loadInventory(); // Giriş yapılmışsa hafızadaki markayı yükle
+        loadInventory(); 
     } else {
         localStorage.removeItem('as_active_user');
         localStorage.removeItem('as_token');
@@ -684,12 +698,25 @@ window.addEventListener('load', function () {
 function _makeToken(u, p) { return btoa(u + ':' + p); }
 
 // ═══════════════════════════════════════
-// 4. DATA LOADING (Dinamik Marka Destekli)
+// MARKA DEĞİŞTİRME FONKSİYONU
+// ═══════════════════════════════════════
+function changeBrand() {
+    var selectedBrand = document.getElementById('activeBrandSelect').value;
+    localStorage.setItem('as_active_brand', selectedBrand);
+    
+    // Aramayı ve listeyi temizleyip yeni markayı yükle
+    inventory = [];
+    document.getElementById('resultsArea').innerHTML = '';
+    document.getElementById('searchInput').value = '';
+    loadInventory();
+}
+
+// ═══════════════════════════════════════
+// 4. DATA LOADING
 // ═══════════════════════════════════════
 function loadInventory() {
     var bar = document.getElementById('debugStatus');
     
-    // Hafızadan seçili markayı al, yoksa varsayılan olarak Joma (data.csv) kullan
     var targetFile = localStorage.getItem('as_active_brand') || 'data.csv';
     var brandName = targetFile === 'adidas.csv' ? 'ADİDAS' : 'JOMA';
 
@@ -793,9 +820,6 @@ function checkLogin() {
     var u = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, '');
     var p = document.getElementById('loginPass').value;
     
-    // Markayı seç
-    var selectedBrandFile = document.getElementById('loginBrand').value;
-
     if (!u || !p) {
         errEl.innerText = 'Kullanıcı adı ve şifre giriniz!';
         errEl.style.display = 'block';
@@ -805,11 +829,8 @@ function checkLogin() {
         localStorage.setItem('as_active_user', u);
         localStorage.setItem('as_token', _makeToken(u, p));
         
-        // Seçilen markayı kaydet ve yükle
-        localStorage.setItem('as_active_brand', selectedBrandFile);
-        loadInventory(); 
-        
         loginSuccess(u);
+        loadInventory(); 
     } else {
         errEl.innerText = 'Kullanıcı adı veya şifre hatalı!';
         errEl.style.display = 'block';
@@ -951,14 +972,16 @@ function escHtml(s) {
 
 function cartItem(csvRow, dealer) {
     return {
-        // Hem İngilizce Joma hem Türkçe Adidas başlıklarını destekler
         product:  csvRow['Product'] || csvRow['Reference'] || csvRow['Ürün Kodu'] || '',
         desc:     csvRow['Description'] || csvRow['Ürün Adı'] || '',
         ean:      csvRow['EAN'] || csvRow['Barkod'] || '',
         size:     csvRow['EUR Size'] || csvRow['Beden'] || '',
         stock:    parseInt(csvRow['Stock Quantity'] || csvRow['Stok'], 10) || 0,
         imageURL: csvRow['ImageURL'] || '',
-        price:    parseFloat(csvRow['Tariff Price'] || csvRow['tspsf'] || csvRow['tsf']) || 0,
+        
+        // Sepette hesaplamaya dahil edilecek asıl fiyatı önceliklendiriyoruz (TSF > Tariff Price > TSPSF)
+        price:    parseFloat(csvRow['tsf'] || csvRow['Tariff Price'] || csvRow['tspsf']) || 0,
+        
         currency: csvRow['Currency'] || 'TL',
         dealer:   dealer,
         qty:      0
@@ -977,7 +1000,6 @@ function searchProduct() {
     if (!q) return;
     if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi.");
 
-    // Hem Joma hem Adidas sütunlarında arama yap
     var matches = inventory.filter(function (i) {
         var pCode = (i['Product'] || i['Reference'] || i['Ürün Kodu'] || '').toUpperCase();
         var pDesc = (i['Description'] || i['Ürün Adı'] || '').toUpperCase();
@@ -1010,9 +1032,24 @@ function renderResults() {
         var f = g[0];
         
         var desc     = f['Description'] || f['Ürün Adı'] || '';
-        var price    = f['Tariff Price'] || f['tspsf'] || f['tsf'] || '';
         var currency = f['Currency'] || 'TL';
         var ean      = f['EAN'] || f['Barkod'] || '-';
+
+        // İKİLİ FİYAT MANTIĞI
+        var priceTsf   = f['tsf'];
+        var priceTspsf = f['tspsf'];
+        var priceJoma  = f['Tariff Price'];
+
+        var priceHtml = '<div style="margin-top:10px;">';
+        if (priceTsf || priceTspsf) {
+            if (priceTsf) priceHtml += '<span style="font-size:15px; font-weight:800; color:#e74c3c; display:block; margin-bottom:2px;">TSF (Toptan): ' + escHtml(priceTsf) + ' ' + escHtml(currency) + '</span>';
+            if (priceTspsf) priceHtml += '<span style="font-size:13px; font-weight:700; color:#27ae60; display:block;">TSPSF (Perakende): ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + '</span>';
+        } else if (priceJoma) {
+            priceHtml += '<span style="font-size:18px; font-weight:900; color:#000; display:block;">' + escHtml(priceJoma) + ' ' + escHtml(currency) + '</span>';
+        } else {
+            priceHtml += '<span style="font-size:18px; font-weight:900; color:#000; display:block;">-</span>';
+        }
+        priceHtml += '</div>';
 
         var card = document.createElement('div');
         card.className = 'product-card';
@@ -1028,8 +1065,7 @@ function renderResults() {
             + '<p class="product-code-label">' + escHtml(code) + '</p>'
             + '<p class="product-name-label">'  + escHtml(desc) + '</p>'
             + '<p style="font-size:10px;color:#bbb;margin:4px 0 0;">EAN: ' + escHtml(ean) + '</p>'
-            + '<span style="font-size:18px;font-weight:900;color:#000;margin-top:10px;display:block;">'
-            + escHtml(price) + ' ' + escHtml(currency) + '</span>'
+            + priceHtml
             + '</div>';
 
         area.appendChild(card);
@@ -1057,13 +1093,28 @@ function openProductModal(code) {
     }
 
     var eanText = f['EAN'] || f['Barkod'];
-    var priceText = f['Tariff Price'] || f['tspsf'] || f['tsf'] || '-';
+    var currency = f['Currency'] || 'TL';
+    
+    // İKİLİ FİYAT MANTIĞI - MODAL İÇİN
+    var priceTsf   = f['tsf'];
+    var priceTspsf = f['tspsf'];
+    var priceJoma  = f['Tariff Price'];
+
+    var priceHtmlModal = '';
+    if (priceTsf || priceTspsf) {
+        if (priceTsf) priceHtmlModal += '<div style="font-size:22px; font-weight:900; color:#e74c3c; margin-bottom:4px;">TSF: ' + escHtml(priceTsf) + ' ' + escHtml(currency) + ' <span style="font-size:13px;font-weight:700;color:#555;">(Toptan)</span></div>';
+        if (priceTspsf) priceHtmlModal += '<div style="font-size:18px; font-weight:800; color:#27ae60; margin-bottom:15px;">TSPSF: ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + ' <span style="font-size:12px;font-weight:600;color:#777;">(Perakende)</span></div>';
+    } else if (priceJoma) {
+        priceHtmlModal += '<div style="font-size:28px; font-weight:900; color:#000; margin-bottom:20px;">' + escHtml(priceJoma) + ' ' + escHtml(currency) + '</div>';
+    } else {
+        priceHtmlModal += '<div style="font-size:28px; font-weight:900; color:#000; margin-bottom:20px;">-</div>';
+    }
     
     document.getElementById('pm-code').innerText  = code;
     document.getElementById('pm-name').innerText  = f['Description'] || f['Ürün Adı'] || '';
     document.getElementById('pm-ean').innerText   = eanText ? 'EAN: ' + eanText : '';
     document.getElementById('pm-desc').innerText  = f['Long Description'] || f['Renk Açıklaması'] || '';
-    document.getElementById('pm-price').innerText = priceText + ' ' + (f['Currency'] || 'TL');
+    document.getElementById('pm-price').innerHTML = priceHtmlModal;
 
     document.getElementById('pm-sizes').innerHTML = g.map(function (item, idx) {
         var stock = parseInt(item['Stock Quantity'] || item['Stok'], 10) || 0;
