@@ -73,7 +73,6 @@
             flex-wrap: wrap; gap: 8px;
         }
 
-        /* Marka Seçici Stili */
         #activeBrandSelect {
             margin-left: 10px; padding: 6px 12px; border-radius: 8px;
             font-weight: 800; font-family: 'Inter'; border: 2px solid #eee;
@@ -432,7 +431,6 @@
                 <option value="data.csv">JOMA</option>
                 <option value="adidas.csv">ADİDAS</option>
             </select>
-
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
             <button onclick="openDashboard()" title="Satış Raporları"
@@ -473,7 +471,7 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" class="search-field"
-               placeholder="Ürün Kodu, İsim veya Barkod..." autocomplete="off">
+               placeholder="Kod, İsim veya Lot Barkodu..." autocomplete="off">
         <button class="btn-scan"   onclick="searchProduct()" title="Ara"><i class="fas fa-search"></i></button>
         <button class="btn-camera" onclick="toggleCamera()"  title="Barkod Tara"><i class="fas fa-barcode"></i></button>
         <button class="btn-ocr"    onclick="openOcrModal()"  title="Fotoğraftan Oku"><i class="fas fa-camera-retro"></i></button>
@@ -569,7 +567,7 @@
             <div class="pm-ean"   id="pm-ean"></div>
             <div class="pm-desc"  id="pm-desc"></div>
             <div class="pm-price" id="pm-price"></div>
-            <div class="pm-sizes-title">Beden Seçin &amp; Adet Girin</div>
+            <div class="pm-sizes-title" id="pm-sizes-title">Beden Seçin &amp; Adet Girin</div>
             <div id="pm-sizes" class="size-grid"></div>
             <button class="pm-add-btn" onclick="addToCartFromModal()">
                 <i class="fas fa-shopping-basket"></i>&nbsp; SEPETE EKLE
@@ -651,6 +649,7 @@ let cameraLocked   = false;
 let ocrStream      = null;
 let ocrText        = '';
 let pendingImport  = null;
+let currentModalItems = [];
 
 const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
 
@@ -676,7 +675,6 @@ window.addEventListener('load', function () {
     var savedUser  = localStorage.getItem('as_active_user');
     var savedToken = localStorage.getItem('as_token');
     
-    // Hafızadaki markayı alıp menüde onu seçili yap
     var savedBrand = localStorage.getItem('as_active_brand') || 'data.csv';
     var brandDropdown = document.getElementById('activeBrandSelect');
     if(brandDropdown) brandDropdown.value = savedBrand;
@@ -697,14 +695,9 @@ window.addEventListener('load', function () {
 
 function _makeToken(u, p) { return btoa(u + ':' + p); }
 
-// ═══════════════════════════════════════
-// MARKA DEĞİŞTİRME FONKSİYONU
-// ═══════════════════════════════════════
 function changeBrand() {
     var selectedBrand = document.getElementById('activeBrandSelect').value;
     localStorage.setItem('as_active_brand', selectedBrand);
-    
-    // Aramayı ve listeyi temizleyip yeni markayı yükle
     inventory = [];
     document.getElementById('resultsArea').innerHTML = '';
     document.getElementById('searchInput').value = '';
@@ -716,7 +709,6 @@ function changeBrand() {
 // ═══════════════════════════════════════
 function loadInventory() {
     var bar = document.getElementById('debugStatus');
-    
     var targetFile = localStorage.getItem('as_active_brand') || 'data.csv';
     var brandName = targetFile === 'adidas.csv' ? 'ADİDAS' : 'JOMA';
 
@@ -745,9 +737,6 @@ function loadInventory() {
     });
 }
 
-// ═══════════════════════════════════════
-// BAYİ ÇEKME & YENİ BAYİ İŞLEMLERİ
-// ═══════════════════════════════════════
 function loadDealersFromCSV() {
     Papa.parse("CardCustomer.csv", {
         download: true,
@@ -756,29 +745,22 @@ function loadDealersFromCSV() {
         complete: function(results) {
             var datalist = document.getElementById('dealerList');
             datalist.innerHTML = ''; 
-            
             results.data.forEach(function(row, index) {
                 if(index === 0 && row[0] && row[0].includes("Sorumlusu")) return;
-
                 var rep = row[0] ? row[0].trim() : "";
                 var code = row[1] ? row[1].trim() : "";
                 var company = row[2] ? row[2].trim() : "";
                 var status = row[3] ? row[3].trim() : "";
-                
                 if(company) {
                     var displayName = rep + ' - ' + code + ' - ' + company;
-                    if(status) {
-                        displayName += ' - (' + status + ')';
-                    }
+                    if(status) displayName += ' - (' + status + ')';
                     var option = document.createElement('option');
                     option.value = displayName;
                     datalist.appendChild(option);
                 }
             });
         },
-        error: function(err) {
-            console.error("CardCustomer.csv okunamadı. Lütfen dosya ismini kontrol edin.", err);
-        }
+        error: function(err) {}
     });
 }
 
@@ -791,35 +773,23 @@ function openNewDealerModal() {
 
 function saveNewDealer() {
     var newName = document.getElementById('newDealerInput').value.trim();
-    if(!newName) {
-        showToast("Lütfen bayi adı girin!");
-        return;
-    }
-    
+    if(!newName) return showToast("Lütfen bayi adı girin!");
     var formattedName = "MANUEL - YENİ - " + newName.toUpperCase();
-    
     var datalist = document.getElementById('dealerList');
     var option = document.createElement('option');
     option.value = formattedName;
     datalist.appendChild(option);
-    
-    var dealerInput = document.getElementById('dealerName');
-    dealerInput.value = formattedName;
+    document.getElementById('dealerName').value = formattedName;
     persistDealer(); 
-    
     closeModal('newDealerModal');
     showToast("✅ Yeni bayi eklendi ve seçildi.");
 }
 
-// ═══════════════════════════════════════
-// 5. AUTH
-// ═══════════════════════════════════════
 function checkLogin() {
     var errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
     var u = document.getElementById('loginUser').value.trim().toLowerCase().replace(/\s/g, '');
     var p = document.getElementById('loginPass').value;
-    
     if (!u || !p) {
         errEl.innerText = 'Kullanıcı adı ve şifre giriniz!';
         errEl.style.display = 'block';
@@ -828,7 +798,6 @@ function checkLogin() {
     if (USERS[u] && USERS[u].pass === p) {
         localStorage.setItem('as_active_user', u);
         localStorage.setItem('as_token', _makeToken(u, p));
-        
         loginSuccess(u);
         loadInventory(); 
     } else {
@@ -842,57 +811,38 @@ function loginSuccess(u) {
     currentU = u;
     document.getElementById('displayUserName').innerText = USERS[u].name;
     document.getElementById('loginOverlay').style.display = 'none';
-
     try {
         var raw = localStorage.getItem('as_cart_' + u);
         cart = raw ? JSON.parse(raw) : [];
     } catch (e) { cart = []; }
-
-    document.getElementById('dealerName').value =
-        localStorage.getItem('as_dealer_' + u) || '';
-
+    document.getElementById('dealerName').value = localStorage.getItem('as_dealer_' + u) || '';
     document.getElementById('btnConfirmOrder').style.display = 'block';
     document.getElementById('postConfirmActions').style.display = 'none';
-
-    if (pendingImport && pendingImport.length > 0) {
-        _showImportBanner(pendingImport);
-    }
-
+    if (pendingImport && pendingImport.length > 0) _showImportBanner(pendingImport);
     updateCartUI();
 }
 
 function persistCart() {
     if (!currentU) return;
-    try {
-        localStorage.setItem('as_cart_' + currentU, JSON.stringify(cart));
-    } catch (e) { console.warn('Cart persist failed:', e); }
+    try { localStorage.setItem('as_cart_' + currentU, JSON.stringify(cart)); } catch (e) {}
 }
 
 function persistDealer() {
-    if (currentU)
-        localStorage.setItem('as_dealer_' + currentU,
-            document.getElementById('dealerName').value);
+    if (currentU) localStorage.setItem('as_dealer_' + currentU, document.getElementById('dealerName').value);
 }
 
-// ═══════════════════════════════════════
-// 5b. CROSS-DEVICE CART SHARING
-// ═══════════════════════════════════════
 function shareCart() {
     if (cart.length === 0) return showToast("Sepet boş — önce ürün ekleyin.");
     try {
         var payload = btoa(encodeURIComponent(JSON.stringify(cart)));
         var url = location.origin + location.pathname + '?sepet=' + payload;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(function () {
-                showToast("✅ Sepet linki kopyalandı! Telefonunda aç.");
-            }).catch(function () { _fallbackCopyUrl(url); });
+            navigator.clipboard.writeText(url).then(function () { showToast("✅ Sepet linki kopyalandı!"); })
+            .catch(function () { _fallbackCopyUrl(url); });
         } else {
             _fallbackCopyUrl(url);
         }
-    } catch (e) {
-        showToast("❌ Paylaşım oluşturulamadı.");
-        console.error(e);
-    }
+    } catch (e) { showToast("❌ Paylaşım oluşturulamadı."); }
 }
 
 function _fallbackCopyUrl(url) {
@@ -916,16 +866,13 @@ function _checkSharedCartUrl() {
         pendingImport = parsed;
         history.replaceState(null, '', location.pathname);
         _showImportBanner(parsed);
-    } catch (e) {
-        console.warn('Shared cart URL parse error:', e);
-    }
+    } catch (e) {}
 }
 
 function _showImportBanner(items) {
     var totalQty = items.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
     var codes    = [...new Set(items.map(function (i) { return i.product; }))].slice(0, 3).join(', ');
-    document.getElementById('importBannerText').innerText =
-        '📦 Paylaşılan sepet: ' + totalQty + ' adet, ' + items.length + ' kalem (' + codes + '...)';
+    document.getElementById('importBannerText').innerText = '📦 Paylaşılan sepet: ' + totalQty + ' adet, ' + items.length + ' kalem (' + codes + '...)';
     document.getElementById('importBanner').classList.add('visible');
 }
 
@@ -933,11 +880,8 @@ function importSharedCart() {
     if (!pendingImport) return;
     pendingImport.forEach(function (incoming) {
         var exist = cart.find(function (c) { return cartKey(c) === cartKey(incoming); });
-        if (exist) {
-            exist.qty += incoming.qty;
-        } else {
-            cart.push(incoming);
-        }
+        if (exist) exist.qty += incoming.qty;
+        else cart.push(incoming);
     });
     persistCart();
     updateCartUI();
@@ -965,9 +909,19 @@ function logout() {
 // 6. HELPERS
 // ═══════════════════════════════════════
 function escHtml(s) {
-    return String(s || '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Lot içeriğindeki toplam ürün adedini hesaplar (Örn: "S/1 , M/2 , L/2" -> 5)
+function getLotPieces(str) {
+    if(!str) return 1;
+    var parts = String(str).split(',');
+    var total = 0;
+    for(var i=0; i<parts.length; i++) {
+        var match = parts[i].match(/(?:\/|-)(\d+)/); 
+        if(match && match[1]) total += parseInt(match[1], 10);
+    }
+    return total > 0 ? total : 1;
 }
 
 function cartItem(csvRow, dealer) {
@@ -978,13 +932,12 @@ function cartItem(csvRow, dealer) {
         size:     csvRow['EUR Size'] || csvRow['Beden'] || '',
         stock:    parseInt(csvRow['Stock Quantity'] || csvRow['Stok'], 10) || 0,
         imageURL: csvRow['ImageURL'] || '',
-        
-        // Sepette hesaplamaya dahil edilecek asıl fiyatı önceliklendiriyoruz (TSF > Tariff Price > TSPSF)
-        price:    parseFloat(csvRow['tsf'] || csvRow['Tariff Price'] || csvRow['tspsf']) || 0,
-        
+        // TOPTAN (TSPSF) öncelikli hesaplama:
+        price:    parseFloat(csvRow['tspsf'] || csvRow['tsf'] || csvRow['Tariff Price']) || 0,
         currency: csvRow['Currency'] || 'TL',
         dealer:   dealer,
-        qty:      0
+        qty:      0,
+        piecesPerUnit: 1 // Standart bedenler için 1, Lotlar için lot adedi ile ezilecek.
     };
 }
 
@@ -1000,11 +953,14 @@ function searchProduct() {
     if (!q) return;
     if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi.");
 
+    // Hem barkod hem de Lot barkodunu tarıyoruz!
     var matches = inventory.filter(function (i) {
         var pCode = (i['Product'] || i['Reference'] || i['Ürün Kodu'] || '').toUpperCase();
         var pDesc = (i['Description'] || i['Ürün Adı'] || '').toUpperCase();
         var pEan  = (i['EAN'] || i['Barkod'] || '').toUpperCase();
-        return pCode.includes(q) || pDesc.includes(q) || pEan.includes(q);
+        var pLot1 = (i['Lot barkodu'] || '').toUpperCase();
+        var pLot2 = (i['2. lot barkodu'] || '').toUpperCase();
+        return pCode.includes(q) || pDesc.includes(q) || pEan.includes(q) || pLot1.includes(q) || pLot2.includes(q);
     });
     
     if (matches.length === 0) return showToast("Bulunamadı: " + q);
@@ -1035,15 +991,15 @@ function renderResults() {
         var currency = f['Currency'] || 'TL';
         var ean      = f['EAN'] || f['Barkod'] || '-';
 
-        // İKİLİ FİYAT MANTIĞI
+        // FİYAT DÜZELTMESİ (TSPSF = Toptan, TSF = Perakende)
+        var priceTspsf = f['tspsf']; 
         var priceTsf   = f['tsf'];
-        var priceTspsf = f['tspsf'];
         var priceJoma  = f['Tariff Price'];
 
         var priceHtml = '<div style="margin-top:10px;">';
-        if (priceTsf || priceTspsf) {
-            if (priceTsf) priceHtml += '<span style="font-size:15px; font-weight:800; color:#e74c3c; display:block; margin-bottom:2px;">TSF (Toptan): ' + escHtml(priceTsf) + ' ' + escHtml(currency) + '</span>';
-            if (priceTspsf) priceHtml += '<span style="font-size:13px; font-weight:700; color:#27ae60; display:block;">TSPSF (Perakende): ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + '</span>';
+        if (priceTspsf || priceTsf) {
+            if (priceTspsf) priceHtml += '<span style="font-size:15px; font-weight:800; color:#27ae60; display:block; margin-bottom:2px;">TSPSF (Toptan): ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + '</span>';
+            if (priceTsf) priceHtml += '<span style="font-size:13px; font-weight:700; color:#e74c3c; display:block;">TSF (Perakende): ' + escHtml(priceTsf) + ' ' + escHtml(currency) + '</span>';
         } else if (priceJoma) {
             priceHtml += '<span style="font-size:18px; font-weight:900; color:#000; display:block;">' + escHtml(priceJoma) + ' ' + escHtml(currency) + '</span>';
         } else {
@@ -1073,7 +1029,7 @@ function renderResults() {
 }
 
 // ═══════════════════════════════════════
-// 8. PRODUCT MODAL
+// 8. PRODUCT MODAL (LOT SİSTEMİ İLE YENİLENDİ)
 // ═══════════════════════════════════════
 function openProductModal(code) {
     var g = groupedResults[code];
@@ -1095,15 +1051,15 @@ function openProductModal(code) {
     var eanText = f['EAN'] || f['Barkod'];
     var currency = f['Currency'] || 'TL';
     
-    // İKİLİ FİYAT MANTIĞI - MODAL İÇİN
+    // Fiyat Gösterimi
+    var priceTspsf = f['tspsf']; 
     var priceTsf   = f['tsf'];
-    var priceTspsf = f['tspsf'];
     var priceJoma  = f['Tariff Price'];
 
     var priceHtmlModal = '';
-    if (priceTsf || priceTspsf) {
-        if (priceTsf) priceHtmlModal += '<div style="font-size:22px; font-weight:900; color:#e74c3c; margin-bottom:4px;">TSF: ' + escHtml(priceTsf) + ' ' + escHtml(currency) + ' <span style="font-size:13px;font-weight:700;color:#555;">(Toptan)</span></div>';
-        if (priceTspsf) priceHtmlModal += '<div style="font-size:18px; font-weight:800; color:#27ae60; margin-bottom:15px;">TSPSF: ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + ' <span style="font-size:12px;font-weight:600;color:#777;">(Perakende)</span></div>';
+    if (priceTspsf || priceTsf) {
+        if (priceTspsf) priceHtmlModal += '<div style="font-size:22px; font-weight:900; color:#27ae60; margin-bottom:4px;">TSPSF: ' + escHtml(priceTspsf) + ' ' + escHtml(currency) + ' <span style="font-size:13px;font-weight:700;color:#555;">(Toptan)</span></div>';
+        if (priceTsf) priceHtmlModal += '<div style="font-size:18px; font-weight:800; color:#e74c3c; margin-bottom:15px;">TSF: ' + escHtml(priceTsf) + ' ' + escHtml(currency) + ' <span style="font-size:12px;font-weight:600;color:#777;">(Perakende)</span></div>';
     } else if (priceJoma) {
         priceHtmlModal += '<div style="font-size:28px; font-weight:900; color:#000; margin-bottom:20px;">' + escHtml(priceJoma) + ' ' + escHtml(currency) + '</div>';
     } else {
@@ -1116,29 +1072,74 @@ function openProductModal(code) {
     document.getElementById('pm-desc').innerText  = f['Long Description'] || f['Renk Açıklaması'] || '';
     document.getElementById('pm-price').innerHTML = priceHtmlModal;
 
-    document.getElementById('pm-sizes').innerHTML = g.map(function (item, idx) {
-        var stock = parseInt(item['Stock Quantity'] || item['Stok'], 10) || 0;
-        var sizeStr = item['EUR Size'] || item['Beden'] || '-';
-        
-        var inCart = 0;
-        cart.forEach(function (c) {
-            var cProduct = item['Product'] || item['Reference'] || item['Ürün Kodu'];
-            if (c.product === cProduct && c.size === sizeStr) inCart = c.qty;
+    // ----- LOT veya BEDEN TESPİTİ -----
+    var keys = Object.keys(f);
+    var lot1Idx = keys.indexOf('Lot barkodu');
+    var lot1Barcode = lot1Idx !== -1 ? f[keys[lot1Idx]] : '';
+    // Boş başlıklı sütunları PapaParse'ın ne isim verdiğine bakmaksızın indeksle çekiyoruz:
+    var lot1Content = (lot1Idx !== -1 && lot1Idx + 1 < keys.length) ? f[keys[lot1Idx + 1]] : '';
+
+    var lot2Idx = keys.indexOf('2. lot barkodu');
+    var lot2Barcode = lot2Idx !== -1 ? f[keys[lot2Idx]] : '';
+    var lot2Content = (lot2Idx !== -1 && lot2Idx + 1 < keys.length) ? f[keys[lot2Idx + 1]] : '';
+
+    var isLotProduct = !!(lot1Barcode || lot2Barcode);
+    currentModalItems = []; // Temizle
+
+    if (isLotProduct) {
+        document.getElementById('pm-sizes-title').innerText = "LOT SEÇİN & ADET GİRİN";
+        if (lot1Barcode) {
+            currentModalItems.push({ type: 'lot', barcode: lot1Barcode, content: lot1Content, pieces: getLotPieces(lot1Content), originalItem: f });
+        }
+        if (lot2Barcode) {
+            currentModalItems.push({ type: 'lot', barcode: lot2Barcode, content: lot2Content, pieces: getLotPieces(lot2Content), originalItem: f });
+        }
+    } else {
+        document.getElementById('pm-sizes-title').innerText = "BEDEN SEÇİN & ADET GİRİN";
+        g.forEach(function (item) {
+            currentModalItems.push({ type: 'size', sizeStr: item['EUR Size'] || item['Beden'] || '-', stock: parseInt(item['Stock Quantity'] || item['Stok'], 10) || 0, originalItem: item });
         });
+    }
+
+    // Modal Listesini Oluştur
+    document.getElementById('pm-sizes').innerHTML = currentModalItems.map(function (mItem, idx) {
+        var inCart = 0;
         
-        return '<div class="size-btn-row' + (inCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
-            + '<div>'
-            + '<span style="font-weight:800;font-size:15px;">' + escHtml(sizeStr) + '</span>'
-            + '<br><small style="color:#888;font-size:11px;">Stok: ' + stock
-            + (inCart > 0 ? ' · Sepette: ' + inCart : '') + '</small>'
-            + '</div>'
-            + '<div class="pm-qty-ctrl">'
-            + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',-1)">−</button>'
-            + '<input type="number" id="pm-qty-' + idx + '" class="pm-qty-inp"'
-            + ' value="0" min="0" max="' + (stock || 999) + '">'
-            + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',1,' + (stock || 999) + ')">+</button>'
-            + '</div>'
-            + '</div>';
+        if (mItem.type === 'lot') {
+            var key = (mItem.originalItem['Product'] || mItem.originalItem['Ürün Kodu']) + '||LOT: ' + mItem.barcode;
+            var cExist = cart.find(c => cartKey(c) === key);
+            if(cExist) inCart = cExist.qty; // Kaç Lot alındığı
+            
+            return '<div class="size-btn-row' + (inCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
+                + '<div>'
+                + '<span style="font-weight:800;font-size:15px;color:var(--accent);">LOT: ' + escHtml(mItem.barcode) + '</span>'
+                + '<br><small style="color:#555;font-size:12px;font-weight:700;">' + escHtml(mItem.content) + ' (' + mItem.pieces + ' Adet)</small>'
+                + (inCart > 0 ? '<br><small style="color:#27ae60;font-weight:800;">Sepette: ' + inCart + ' Lot (' + (inCart * mItem.pieces) + ' Ürün)</small>' : '')
+                + '</div>'
+                + '<div class="pm-qty-ctrl">'
+                + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',-1)">−</button>'
+                + '<input type="number" id="pm-qty-' + idx + '" class="pm-qty-inp" value="0" min="0" max="999">'
+                + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',1,999)">+</button>'
+                + '</div>'
+                + '</div>';
+        } else {
+            var key = (mItem.originalItem['Product'] || mItem.originalItem['Ürün Kodu']) + '||' + mItem.sizeStr;
+            var cExist = cart.find(c => cartKey(c) === key);
+            if(cExist) inCart = cExist.qty;
+
+            return '<div class="size-btn-row' + (inCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
+                + '<div>'
+                + '<span style="font-weight:800;font-size:15px;">' + escHtml(mItem.sizeStr) + '</span>'
+                + '<br><small style="color:#888;font-size:11px;">Stok: ' + mItem.stock
+                + (inCart > 0 ? ' · Sepette: ' + inCart : '') + '</small>'
+                + '</div>'
+                + '<div class="pm-qty-ctrl">'
+                + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',-1)">−</button>'
+                + '<input type="number" id="pm-qty-' + idx + '" class="pm-qty-inp" value="0" min="0" max="' + (mItem.stock || 999) + '">'
+                + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',1,' + (mItem.stock || 999) + ')">+</button>'
+                + '</div>'
+                + '</div>';
+        }
     }).join('');
 
     document.getElementById('productModal').classList.add('open');
@@ -1164,44 +1165,58 @@ function _closeProductModal() {
 }
 
 function addToCartFromModal() {
-    var codeSnapshot = modalCode;
-    if (!codeSnapshot) return;
+    if (!modalCode) return;
     var d = document.getElementById('dealerName').value.trim();
     if (!d) return showToast("⚠️ Önce Bayi Adı Girin!");
 
-    var g = groupedResults[codeSnapshot];
-    if (!g) return;
+    var addedLots = 0;
+    var addedItems = 0;
 
-    var added = 0;
-    g.forEach(function (item, idx) {
+    currentModalItems.forEach(function (mItem, idx) {
         var el = document.getElementById('pm-qty-' + idx);
-        var q = parseInt(el ? el.value : '0', 10);
+        var q = parseInt(el ? el.value : '0', 10); // q = Lot Sayısı veya Ürün Sayısı
         if (isNaN(q) || q <= 0) return;
 
-        var cProduct = item['Product'] || item['Reference'] || item['Ürün Kodu'] || '';
-        var cSize = item['EUR Size'] || item['Beden'] || '';
+        var cProduct = mItem.originalItem['Product'] || mItem.originalItem['Reference'] || mItem.originalItem['Ürün Kodu'] || '';
+        var cSize = mItem.type === 'lot' ? ('LOT: ' + mItem.barcode) : mItem.sizeStr;
         var key = cProduct + '||' + cSize;
         
         var exist = cart.find(function (x) { return cartKey(x) === key; });
         if (exist) {
             exist.qty += q;
         } else {
-            var newItem = cartItem(item, d);
+            var newItem = cartItem(mItem.originalItem, d);
             newItem.qty = q;
+            newItem.size = cSize;
+            newItem.piecesPerUnit = mItem.type === 'lot' ? mItem.pieces : 1;
+            
+            if(mItem.type === 'lot') {
+                newItem.ean = mItem.barcode; // Barkod kolonuna Lot barkodunu basıyoruz
+                newItem.desc += ' (' + mItem.content + ')'; // Ürün isminin yanına lot dağılımını yazdırıyoruz
+            }
             cart.push(newItem);
         }
-        added += q;
+        
+        if(mItem.type === 'lot') {
+            addedLots += q;
+            addedItems += (q * mItem.pieces);
+        } else {
+            addedItems += q;
+        }
     });
 
-    if (added > 0) {
+    if (addedItems > 0) {
         persistCart();
         updateCartUI();
         document.getElementById('btnConfirmOrder').style.display = 'block';
         document.getElementById('postConfirmActions').style.display = 'none';
-        showToast('✅ ' + added + ' adet eklendi.');
+        
+        if(addedLots > 0) showToast('✅ ' + addedLots + ' Lot (' + addedItems + ' Ürün) Eklendi!');
+        else showToast('✅ ' + addedItems + ' adet eklendi.');
+        
         _closeProductModal();
     } else {
-        showToast("Lütfen en az bir beden için adet girin.");
+        showToast("Lütfen en az bir seçenek için adet girin.");
     }
 }
 
@@ -1209,27 +1224,29 @@ function addToCartFromModal() {
 // 9. CART UI
 // ═══════════════════════════════════════
 function updateCartUI() {
-    var count    = cart.reduce(function (a, b) { return a + b.qty; }, 0);
-    var total    = cart.reduce(function (a, b) {
+    // Sepet alt barda toplam fiziki ürün sayısını (qty * piecesPerUnit) gösteriyoruz
+    var totalPhysicalItems = cart.reduce(function (a, b) { return a + (b.qty * (b.piecesPerUnit || 1)); }, 0);
+    var totalCost = cart.reduce(function (a, b) {
         var p = isNaN(b.price) ? 0 : b.price;
-        return a + p * b.qty;
+        return a + (p * b.qty * (b.piecesPerUnit || 1));
     }, 0);
+    
     var currency = cart.length > 0 ? (cart[0].currency || 'TL') : 'TL';
-    var totalStr = total.toFixed(2) + ' ' + currency;
+    var totalStr = totalCost.toFixed(2) + ' ' + currency;
 
     document.getElementById('cartTotal').innerText = totalStr;
-    document.getElementById('st-qty').innerText    = count;
+    document.getElementById('st-qty').innerText    = totalPhysicalItems;
     document.getElementById('st-total').innerText  = totalStr;
     document.getElementById('cartSummaryLine').innerText =
-        count > 0 ? count + ' adet · ' + cart.length + ' kalem' : '';
+        totalPhysicalItems > 0 ? totalPhysicalItems + ' adet ürün · ' + cart.length + ' kalem' : '';
 
     var bar = document.getElementById('cartSummaryBar');
-    if (count > 0) bar.classList.add('active');
-    else           bar.classList.remove('active');
+    if (totalPhysicalItems > 0) bar.classList.add('active');
+    else bar.classList.remove('active');
 
     var shareBtn = document.getElementById('shareCartBtn');
-    if (count > 0) shareBtn.classList.add('visible');
-    else           shareBtn.classList.remove('visible');
+    if (totalPhysicalItems > 0) shareBtn.classList.add('visible');
+    else shareBtn.classList.remove('visible');
 
     if (document.getElementById('cartModal').style.display === 'block') {
         _renderCartItems();
@@ -1257,8 +1274,8 @@ function _renderCartItems() {
             groupOrder.push(code);
         }
         groups[code].items.push(item);
-        groups[code].subTotal += (isNaN(item.price) ? 0 : item.price) * item.qty;
-        groups[code].subQty   += item.qty;
+        groups[code].subTotal += (isNaN(item.price) ? 0 : item.price) * item.qty * item.piecesPerUnit;
+        groups[code].subQty   += item.qty * item.piecesPerUnit;
     });
 
     list.innerHTML = groupOrder.map(function (code) {
@@ -1275,15 +1292,19 @@ function _renderCartItems() {
             + '<div style="flex:1;min-width:0;">'
             + '<div style="font-size:11px;font-weight:800;color:var(--accent);">' + escHtml(code) + '</div>'
             + '<div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(g.name) + '</div>'
-            + '<div style="font-size:12px;color:#555;margin-top:4px;"><b>' + g.subQty + ' ADET</b> — '
+            + '<div style="font-size:12px;color:#555;margin-top:4px;"><b>' + g.subQty + ' ÜRÜN</b> — '
             + g.subTotal.toFixed(2) + ' ' + escHtml(cur) + '</div>'
             + '</div></div>'
             + g.items.map(function (item) {
                 var key = encodeURIComponent(cartKey(item));
+                var isLot = item.piecesPerUnit > 1;
+                var lotTag = isLot ? '<span style="color:var(--accent);font-size:10px;font-weight:bold;">(LOT)</span> ' : '';
+                var piecesInfo = isLot ? '<br><small style="color:#27ae60;font-weight:700;">1 Lot = ' + item.piecesPerUnit + ' Adet</small>' : '';
+                
                 return '<div class="cart-size-row">'
                     + '<div>'
-                    + '<span style="font-weight:700;">Beden: ' + escHtml(item.size || '-') + '</span>'
-                    + '<br><small style="color:#aaa;">Stok: ' + escHtml(String(item.stock || 0)) + '</small>'
+                    + '<span style="font-weight:700;">' + lotTag + escHtml(item.size || '-') + '</span>'
+                    + piecesInfo
                     + '</div>'
                     + '<div style="display:flex;align-items:center;gap:10px;">'
                     + '<div class="cart-qty-ctrl">'
@@ -1292,7 +1313,7 @@ function _renderCartItems() {
                     + '<button class="cart-btn-qty" onclick="cartChangeQty(\'' + key + '\',1)">+</button>'
                     + '</div>'
                     + '<span style="font-size:12px;color:#aaa;min-width:70px;text-align:right;">'
-                    + (isNaN(item.price) ? '-' : (item.price * item.qty).toFixed(2)) + ' ' + escHtml(cur)
+                    + (isNaN(item.price) ? '-' : (item.price * item.qty * item.piecesPerUnit).toFixed(2)) + ' ' + escHtml(cur)
                     + '</span>'
                     + '</div>'
                     + '</div>';
@@ -1359,10 +1380,10 @@ function saveAndExport() {
         return {
             'Ürün Kodu':   i.product,
             'Açıklama':    i.desc,
-            'Beden':       i.size,
-            'Adet':        i.qty,
+            'Beden / Lot': i.size,
+            'Toplam Adet': i.qty * i.piecesPerUnit, // Muhasebe veya depo sistemi için asıl çarpılmış adet
             'Birim Fiyat': i.price,
-            'Toplam':      (isNaN(i.price) ? 0 : i.price * i.qty).toFixed(2),
+            'Toplam':      (isNaN(i.price) ? 0 : i.price * i.qty * i.piecesPerUnit).toFixed(2),
             'Para Birimi': i.currency,
             'Bayi':        i.dealer
         };
@@ -1388,25 +1409,27 @@ function sendMail() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GÖNDERİLİYOR...';
 
     var table = '<table border="1" style="border-collapse:collapse;width:100%;font-family:Arial;font-size:13px;">'
-        + '<tr style="background:#000;color:#fff;"><th>Kod</th><th>Ürün</th><th>Beden</th><th>Adet</th><th>Tutar</th></tr>';
+        + '<tr style="background:#000;color:#fff;"><th>Kod</th><th>Ürün</th><th>Beden/Lot</th><th>Adet</th><th>Tutar</th></tr>';
     cart.forEach(function (i) {
+        var totalQty = i.qty * i.piecesPerUnit;
         table += '<tr>'
             + '<td>' + escHtml(i.product)  + '</td>'
             + '<td>' + escHtml(i.desc)     + '</td>'
             + '<td>' + escHtml(i.size)     + '</td>'
-            + '<td>' + i.qty               + '</td>'
-            + '<td>' + (isNaN(i.price) ? '-' : (i.price * i.qty).toFixed(2)) + ' ' + escHtml(i.currency) + '</td>'
+            + '<td>' + totalQty            + '</td>'
+            + '<td>' + (isNaN(i.price) ? '-' : (i.price * totalQty).toFixed(2)) + ' ' + escHtml(i.currency) + '</td>'
             + '</tr>';
     });
     table += '</table>';
 
     var extra = document.getElementById('customerEmail').value.trim();
+    var sumPhysicalQty = cart.reduce(function (s, i) { return s + (i.qty * i.piecesPerUnit); }, 0);
 
     emailjs.send(EMAILJS_SVC, EMAILJS_TMP, {
         manager:        USERS[currentU].name,
         dealer:         dealer,
         order_details:  table,
-        total_qty:      cart.reduce(function (s, i) { return s + i.qty; }, 0),
+        total_qty:      sumPhysicalQty,
         customer_email: FIXED_EMAILS + (extra ? ', ' + extra : '')
     })
     .then(function () {
@@ -1447,11 +1470,11 @@ function openHistory() {
         list.innerHTML = '<p style="text-align:center;color:#bbb;padding:20px;">Geçmiş yok.</p>';
     } else {
         list.innerHTML = h.map(function (o) {
-            var totalQty = o.items.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
+            var totalQty = o.items.reduce(function (s, i) { return s + ((i.qty || 0) * (i.piecesPerUnit || 1)); }, 0);
             return '<div class="hist-item">'
                 + '<div class="hist-item-info">'
                 + '<b>' + escHtml(o.dealer) + '</b>'
-                + '<small>' + escHtml(o.date) + ' · ' + totalQty + ' adet · ' + o.items.length + ' kalem</small>'
+                + '<small>' + escHtml(o.date) + ' · ' + totalQty + ' ürün · ' + o.items.length + ' kalem</small>'
                 + '</div>'
                 + '<button class="btn-hist-excel" onclick="downloadHistItem(' + o.id + ')">Excel</button>'
                 + '</div>';
@@ -1467,13 +1490,14 @@ function downloadHistItem(id) {
         if (!rec) return showToast("Kayıt bulunamadı.");
 
         var rows = rec.items.map(function (i) {
+            var ppu = i.piecesPerUnit || 1;
             return {
                 'Ürün Kodu':   i.product  || i['Product']     || '',
                 'Açıklama':    i.desc     || i['Description'] || '',
-                'Beden':       i.size     || i['EUR Size']    || '',
-                'Adet':        i.qty,
+                'Beden / Lot': i.size     || i['EUR Size']    || '',
+                'Toplam Adet': i.qty * ppu,
                 'Birim Fiyat': i.price    || 0,
-                'Toplam':      ((i.price || 0) * i.qty).toFixed(2),
+                'Toplam':      ((i.price || 0) * i.qty * ppu).toFixed(2),
                 'Para Birimi': i.currency || i['Currency']    || '',
                 'Bayi':        i.dealer   || rec.dealer
             };
@@ -1490,7 +1514,7 @@ function downloadHistItem(id) {
 }
 
 // ═══════════════════════════════════════
-// 13b. OCR PHOTO SCANNER (PERFORMANS OPTİMİZASYONLU)
+// 13b. OCR PHOTO SCANNER 
 // ═══════════════════════════════════════
 let ocrWorker = null; 
 
@@ -1625,7 +1649,7 @@ function useOcrResult() {
 }
 
 // ═══════════════════════════════════════
-// 14. CAMERA (Barcode - Performans & Fener Destekli)
+// 14. CAMERA (Barcode)
 // ═══════════════════════════════════════
 let isTorchOn = false; 
 
