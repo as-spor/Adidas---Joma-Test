@@ -717,7 +717,14 @@ function loadInventory() {
     bar.innerText = '⏳ ' + brandName + ' verileri yükleniyor...';
 
     Papa.parse(targetFile, {
-        download: true, header: true, delimiter: ';', skipEmptyLines: 'greedy',
+        download: true, 
+        header: true, 
+        delimiter: ';', 
+        skipEmptyLines: 'greedy',
+        // Excelden gelen boş başlıkların ezilmesini önleyen özel kural
+        transformHeader: function(header, index) {
+            return !header || header.trim() === '' ? 'Empty_' + index : header.trim();
+        },
         complete: function (r) {
             inventory = r.data.filter(function (row) {
                 return row['Product'] || row['Reference'] || row['Ürün Kodu'] || row['EAN'] || row['Barkod'];
@@ -912,14 +919,19 @@ function escHtml(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Lot içeriğindeki toplam ürün adedini hesaplar (Örn: "S/1 , M/2 , L/2" -> 5)
+// Lot içeriğindeki toplam ürün adedini hem Joma hem Adidas tarzında hesaplar
 function getLotPieces(str) {
     if(!str) return 1;
-    var parts = String(str).split(',');
     var total = 0;
-    for(var i=0; i<parts.length; i++) {
-        var match = parts[i].match(/(?:\/|-)(\d+)/); 
-        if(match && match[1]) total += parseInt(match[1], 10);
+    // Adidas Tarzı (S/1 , M/2)
+    var slashMatches = String(str).match(/(?:\/|-)(\d+)/g);
+    // Joma Tarzı (40 x 2 , 39 × 1)
+    var timesMatches = String(str).match(/(?:[xX×])\s*(\d+)/g);
+    
+    if (slashMatches) {
+        slashMatches.forEach(function(m) { total += parseInt(m.replace(/\D/g, ''), 10); });
+    } else if (timesMatches) {
+        timesMatches.forEach(function(m) { total += parseInt(m.replace(/\D/g, ''), 10); });
     }
     return total > 0 ? total : 1;
 }
@@ -932,12 +944,11 @@ function cartItem(csvRow, dealer) {
         size:     csvRow['EUR Size'] || csvRow['Beden'] || '',
         stock:    parseInt(csvRow['Stock Quantity'] || csvRow['Stok'], 10) || 0,
         imageURL: csvRow['ImageURL'] || '',
-        // TOPTAN (TSPSF) öncelikli hesaplama:
         price:    parseFloat(csvRow['tspsf'] || csvRow['tsf'] || csvRow['Tariff Price']) || 0,
         currency: csvRow['Currency'] || 'TL',
         dealer:   dealer,
         qty:      0,
-        piecesPerUnit: 1 // Standart bedenler için 1, Lotlar için lot adedi ile ezilecek.
+        piecesPerUnit: 1 
     };
 }
 
@@ -953,7 +964,6 @@ function searchProduct() {
     if (!q) return;
     if (inventory.length === 0) return showToast("Veriler henüz yüklenmedi.");
 
-    // Hem barkod hem de Lot barkodunu tarıyoruz!
     var matches = inventory.filter(function (i) {
         var pCode = (i['Product'] || i['Reference'] || i['Ürün Kodu'] || '').toUpperCase();
         var pDesc = (i['Description'] || i['Ürün Adı'] || '').toUpperCase();
@@ -991,7 +1001,6 @@ function renderResults() {
         var currency = f['Currency'] || 'TL';
         var ean      = f['EAN'] || f['Barkod'] || '-';
 
-        // FİYAT DÜZELTMESİ (TSPSF = Toptan, TSF = Perakende)
         var priceTspsf = f['tspsf']; 
         var priceTsf   = f['tsf'];
         var priceJoma  = f['Tariff Price'];
@@ -1029,7 +1038,7 @@ function renderResults() {
 }
 
 // ═══════════════════════════════════════
-// 8. PRODUCT MODAL (LOT SİSTEMİ İLE YENİLENDİ)
+// 8. PRODUCT MODAL
 // ═══════════════════════════════════════
 function openProductModal(code) {
     var g = groupedResults[code];
@@ -1051,7 +1060,6 @@ function openProductModal(code) {
     var eanText = f['EAN'] || f['Barkod'];
     var currency = f['Currency'] || 'TL';
     
-    // Fiyat Gösterimi
     var priceTspsf = f['tspsf']; 
     var priceTsf   = f['tsf'];
     var priceJoma  = f['Tariff Price'];
@@ -1072,11 +1080,10 @@ function openProductModal(code) {
     document.getElementById('pm-desc').innerText  = f['Long Description'] || f['Renk Açıklaması'] || '';
     document.getElementById('pm-price').innerHTML = priceHtmlModal;
 
-    // ----- LOT veya BEDEN TESPİTİ -----
     var keys = Object.keys(f);
+    
     var lot1Idx = keys.indexOf('Lot barkodu');
     var lot1Barcode = lot1Idx !== -1 ? f[keys[lot1Idx]] : '';
-    // Boş başlıklı sütunları PapaParse'ın ne isim verdiğine bakmaksızın indeksle çekiyoruz:
     var lot1Content = (lot1Idx !== -1 && lot1Idx + 1 < keys.length) ? f[keys[lot1Idx + 1]] : '';
 
     var lot2Idx = keys.indexOf('2. lot barkodu');
@@ -1084,7 +1091,7 @@ function openProductModal(code) {
     var lot2Content = (lot2Idx !== -1 && lot2Idx + 1 < keys.length) ? f[keys[lot2Idx + 1]] : '';
 
     var isLotProduct = !!(lot1Barcode || lot2Barcode);
-    currentModalItems = []; // Temizle
+    currentModalItems = []; 
 
     if (isLotProduct) {
         document.getElementById('pm-sizes-title').innerText = "LOT SEÇİN & ADET GİRİN";
@@ -1101,20 +1108,21 @@ function openProductModal(code) {
         });
     }
 
-    // Modal Listesini Oluştur
     document.getElementById('pm-sizes').innerHTML = currentModalItems.map(function (mItem, idx) {
         var inCart = 0;
         
         if (mItem.type === 'lot') {
             var key = (mItem.originalItem['Product'] || mItem.originalItem['Ürün Kodu']) + '||LOT: ' + mItem.barcode;
             var cExist = cart.find(c => cartKey(c) === key);
-            if(cExist) inCart = cExist.qty; // Kaç Lot alındığı
+            if(cExist) inCart = cExist.qty; 
+            
+            var contentStr = mItem.content ? escHtml(mItem.content) : '-';
             
             return '<div class="size-btn-row' + (inCart > 0 ? ' has-qty' : '') + '" id="sizerow-' + idx + '">'
                 + '<div>'
                 + '<span style="font-weight:800;font-size:15px;color:var(--accent);">LOT: ' + escHtml(mItem.barcode) + '</span>'
-                + '<br><small style="color:#555;font-size:12px;font-weight:700;">' + escHtml(mItem.content) + ' (' + mItem.pieces + ' Adet)</small>'
-                + (inCart > 0 ? '<br><small style="color:#27ae60;font-weight:800;">Sepette: ' + inCart + ' Lot (' + (inCart * mItem.pieces) + ' Ürün)</small>' : '')
+                + '<br><span style="color:#555;font-size:14px;font-weight:700;display:inline-block;margin-top:5px;">' + contentStr + '</span>'
+                + (inCart > 0 ? '<br><small style="color:#27ae60;font-weight:800;">Sepette: ' + inCart + ' Lot eklendi</small>' : '')
                 + '</div>'
                 + '<div class="pm-qty-ctrl">'
                 + '<button class="pm-btn-qty" onclick="pmQty(' + idx + ',-1)">−</button>'
@@ -1174,7 +1182,7 @@ function addToCartFromModal() {
 
     currentModalItems.forEach(function (mItem, idx) {
         var el = document.getElementById('pm-qty-' + idx);
-        var q = parseInt(el ? el.value : '0', 10); // q = Lot Sayısı veya Ürün Sayısı
+        var q = parseInt(el ? el.value : '0', 10); 
         if (isNaN(q) || q <= 0) return;
 
         var cProduct = mItem.originalItem['Product'] || mItem.originalItem['Reference'] || mItem.originalItem['Ürün Kodu'] || '';
@@ -1191,8 +1199,8 @@ function addToCartFromModal() {
             newItem.piecesPerUnit = mItem.type === 'lot' ? mItem.pieces : 1;
             
             if(mItem.type === 'lot') {
-                newItem.ean = mItem.barcode; // Barkod kolonuna Lot barkodunu basıyoruz
-                newItem.desc += ' (' + mItem.content + ')'; // Ürün isminin yanına lot dağılımını yazdırıyoruz
+                newItem.ean = mItem.barcode; 
+                newItem.desc += ' (' + mItem.content + ')'; 
             }
             cart.push(newItem);
         }
@@ -1224,7 +1232,6 @@ function addToCartFromModal() {
 // 9. CART UI
 // ═══════════════════════════════════════
 function updateCartUI() {
-    // Sepet alt barda toplam fiziki ürün sayısını (qty * piecesPerUnit) gösteriyoruz
     var totalPhysicalItems = cart.reduce(function (a, b) { return a + (b.qty * (b.piecesPerUnit || 1)); }, 0);
     var totalCost = cart.reduce(function (a, b) {
         var p = isNaN(b.price) ? 0 : b.price;
@@ -1299,12 +1306,10 @@ function _renderCartItems() {
                 var key = encodeURIComponent(cartKey(item));
                 var isLot = item.piecesPerUnit > 1;
                 var lotTag = isLot ? '<span style="color:var(--accent);font-size:10px;font-weight:bold;">(LOT)</span> ' : '';
-                var piecesInfo = isLot ? '<br><small style="color:#27ae60;font-weight:700;">1 Lot = ' + item.piecesPerUnit + ' Adet</small>' : '';
                 
                 return '<div class="cart-size-row">'
                     + '<div>'
                     + '<span style="font-weight:700;">' + lotTag + escHtml(item.size || '-') + '</span>'
-                    + piecesInfo
                     + '</div>'
                     + '<div style="display:flex;align-items:center;gap:10px;">'
                     + '<div class="cart-qty-ctrl">'
@@ -1381,7 +1386,7 @@ function saveAndExport() {
             'Ürün Kodu':   i.product,
             'Açıklama':    i.desc,
             'Beden / Lot': i.size,
-            'Toplam Adet': i.qty * i.piecesPerUnit, // Muhasebe veya depo sistemi için asıl çarpılmış adet
+            'Toplam Adet': i.qty * i.piecesPerUnit, 
             'Birim Fiyat': i.price,
             'Toplam':      (isNaN(i.price) ? 0 : i.price * i.qty * i.piecesPerUnit).toFixed(2),
             'Para Birimi': i.currency,
